@@ -31,6 +31,47 @@ def exponential_linspace_int(start, end, num, divisible_by = 1):
 
 # relative positional encoding functions
 
+def get_positional_features_exponential(positions, features, seq_len, min_half_life = 3.):
+    max_range = math.log(seq_len) / math.log(2.)
+    half_life = 2 ** torch.linspace(min_half_life, max_range, features, device = positions.device)
+    half_life = half_life[None, ...]
+    positions = positions.abs()[..., None]
+    return torch.exp(-math.log(2.) / half_life * positions)
+
+def get_positional_features_central_mask(positions, features, seq_len):
+    center_widths = 2 ** torch.arange(1, features + 1, device = positions.device).float()
+    center_widths = center_widths - 1
+    return (center_widths[None, ...] > positions.abs()[..., None]).float()
+
+def get_positional_features_gamma(positions, features, seq_len):
+    center_widths = 2 ** torch.arange(1, features + 1, device = positions.device).float()
+    center_widths = center_widths - 1
+    return (center_widths[None, ...] > positions.abs()[..., None]).float()
+
+def get_positional_embed(seq_len, feature_size, device):
+    distances = torch.arange(-seq_len + 1, seq_len, device = device)
+
+    feature_functions = [
+        get_positional_features_exponential,
+        get_positional_features_central_mask,
+        get_positional_features_gamma
+    ]
+
+    num_components = len(feature_functions) * 2
+
+    if (feature_size % num_components) != 0:
+        raise ValueError(f'feature size is not divisible by number of components ({num_components})')
+
+    num_basis_per_class = feature_size // num_components
+
+    embeddings = []
+    for fn in feature_functions:
+        embeddings.append(fn(distances, num_basis_per_class, seq_len))
+
+    embeddings = torch.cat(embeddings, dim = -1)
+    embeddings = torch.cat((embeddings, torch.sign(distances)[..., None] * embeddings), dim = -1)
+    return embeddings
+
 def relative_shift(x):
     to_pad = torch.zeros_like(x[..., :1])
     x = torch.cat((to_pad, x), dim = -1)
@@ -98,12 +139,12 @@ class Attention(nn.Module):
         self,
         dim,
         *,
+        num_rel_pos_features,
         heads = 8,
         dim_key = 64,
         dim_value = 64,
         dropout = 0.,
-        pos_dropout = 0.,
-        num_rel_pos_features = None
+        pos_dropout = 0.
     ):
         super().__init__()
         self.scale = dim_key ** -0.5
@@ -121,7 +162,7 @@ class Attention(nn.Module):
 
         self.num_rel_pos_features = num_rel_pos_features
 
-        self.to_rel_k = nn.Linear(1, dim_key * heads, bias = False)
+        self.to_rel_k = nn.Linear(num_rel_pos_features, dim_key * heads, bias = False)
         self.rel_content_bias = nn.Parameter(torch.randn(1, heads, 1, dim_key))
         self.rel_pos_bias = nn.Parameter(torch.randn(1, heads, 1, dim_key))
 
@@ -143,8 +184,8 @@ class Attention(nn.Module):
 
         content_logits = einsum('b h i d, b h j d -> b h i j', q + self.rel_content_bias, k)
 
-        distances = torch.arange(-n + 1, n, device = device).float()
-        rel_k = self.to_rel_k(distances[..., None])
+        positions = get_positional_embed(n, self.num_rel_pos_features, device)
+        rel_k = self.to_rel_k(positions)
 
         rel_k = rearrange(rel_k, 'n (h d) -> h n d', h = h)
         rel_logits = einsum('b h i d, h j d -> b h i j', q + self.rel_pos_bias, rel_k)
