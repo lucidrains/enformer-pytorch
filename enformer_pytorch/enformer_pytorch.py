@@ -102,6 +102,8 @@ class Attention(nn.Module):
         self.to_v = nn.Linear(dim, dim_value * heads, bias = False)
 
         self.to_out = nn.Linear(dim_value * heads, dim)
+        nn.init.zeros_(self.to_out.weight)
+        nn.init.zeros_(self.to_out.bias)
 
         self.rel_content_bias = nn.Parameter(torch.randn(1, heads, 1, dim_key))
         self.rel_pos_bias = nn.Parameter(torch.randn(1, heads, 1, dim_key))
