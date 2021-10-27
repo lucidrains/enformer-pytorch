@@ -90,7 +90,8 @@ class Attention(nn.Module):
         heads = 8,
         dim_key = 64,
         dim_value = 64,
-        dropout = 0.
+        dropout = 0.,
+        pos_dropout = 0.
     ):
         super().__init__()
         self.scale = dim_key ** -0.5
@@ -99,9 +100,14 @@ class Attention(nn.Module):
         self.to_q = nn.Linear(dim, dim_key * heads, bias = False)
         self.to_k = nn.Linear(dim, dim_key * heads, bias = False)
         self.to_v = nn.Linear(dim, dim_value * heads, bias = False)
-        self.attn_dropout = nn.Dropout(dropout)
 
         self.to_out = nn.Linear(dim_value * heads, dim)
+
+        self.rel_content_bias = nn.Parameter(torch.randn(1, heads, 1, dim_key))
+        self.rel_pos_bias = nn.Parameter(torch.randn(1, heads, 1, dim_key))
+
+        self.pos_dropout = nn.Dropout(pos_dropout)
+        self.attn_dropout = nn.Dropout(dropout)
 
     def forward(self, x):
         h = self.heads
@@ -111,7 +117,9 @@ class Attention(nn.Module):
 
         q, k, v = map(lambda t: rearrange(t, 'b n (h d) -> b h n d', h = h), (q, k, v))
 
-        sim = einsum('b h i d, b h j d -> b h i j', q, k) * self.scale
+        q = q * self.scale
+
+        sim = einsum('b h i d, b h j d -> b h i j', q + self.rel_content_bias, k)
         attn = sim.softmax(dim = -1)
         attn = self.attn_dropout(attn)
 
