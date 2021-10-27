@@ -29,6 +29,17 @@ def exponential_linspace_int(start, end, num, divisible_by = 1):
     base = math.exp(math.log(end / start) / (num - 1))
     return [_round(start * base**i) for i in range(num)]
 
+# relative positional encoding functions
+
+def relative_shift(x):
+    to_pad = torch.zeros_like(x[..., :1])
+    x = torch.cat((to_pad, x), dim = -1)
+    _, h, t1, t2 = x.shape
+    x = x.reshape(-1, h, t2, t1)
+    x = x[:, :, 1:, :]
+    x = x.reshape(-1, h, t1, t2 - 1)
+    return x[..., :((t2 + 1) // 2)]
+
 # classes
 
 class Residual(nn.Module):
@@ -105,6 +116,7 @@ class Attention(nn.Module):
         nn.init.zeros_(self.to_out.weight)
         nn.init.zeros_(self.to_out.bias)
 
+        self.to_rel_k = nn.Linear(1, dim_key * heads, bias = False)
         self.rel_content_bias = nn.Parameter(torch.randn(1, heads, 1, dim_key))
         self.rel_pos_bias = nn.Parameter(torch.randn(1, heads, 1, dim_key))
 
@@ -112,7 +124,8 @@ class Attention(nn.Module):
         self.attn_dropout = nn.Dropout(dropout)
 
     def forward(self, x):
-        h = self.heads
+        n, h, device = x.shape[-2], self.heads, x.device
+
         q = self.to_q(x)
         k = self.to_k(x)
         v = self.to_v(x)
@@ -121,8 +134,17 @@ class Attention(nn.Module):
 
         q = q * self.scale
 
-        sim = einsum('b h i d, b h j d -> b h i j', q + self.rel_content_bias, k)
-        attn = sim.softmax(dim = -1)
+        content_logits = einsum('b h i d, b h j d -> b h i j', q + self.rel_content_bias, k)
+
+        distances = torch.arange(-n + 1, n, device = device).float()
+        rel_k = self.to_rel_k(distances[..., None])
+
+        rel_k = rearrange(rel_k, 'n (h d) -> h n d', h = h)
+        rel_logits = einsum('b h i d, h j d -> b h i j', q + self.rel_pos_bias, rel_k)
+        rel_logits = relative_shift(rel_logits)
+
+        logits = content_logits + rel_logits
+        attn = logits.softmax(dim = -1)
         attn = self.attn_dropout(attn)
 
         out = einsum('b h i j, b h j d -> b h i d', attn, v)
