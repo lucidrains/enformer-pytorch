@@ -67,12 +67,12 @@ class TargetLengthCrop(nn.Module):
         self.target_length = target_length
 
     def forward(self, x):
-        seq_len, target_len = x.shape[-1], self.target_length
+        seq_len, target_len = x.shape[-2], self.target_length
         if seq_len < target_len:
             raise ValueError(f'sequence length {seq_len} is less than target length {target_len}')
 
         trim = (target_len - seq_len) // 2
-        return x[..., -trim:trim]
+        return x[:, -trim:trim]
 
 def ConvBlock(dim, dim_out = None, kernel_size = 1):
     return nn.Sequential(
@@ -99,11 +99,16 @@ class Enformer(nn.Module):
         half_dim = dim // 2
         twice_dim = dim * 2
 
+        # create stem
+
         self.stem = nn.Sequential(
+            Rearrange('b n d -> b d n'),
             nn.Conv1d(num_alphabet, half_dim, 15, padding = 7),
             Residual(ConvBlock(half_dim)),
             AttentionPool(half_dim, pool_size = 2)
         )
+
+        # create conv tower
 
         filter_list = exponential_linspace_int(half_dim, dim, num = 6, divisible_by = 128)
         filter_list = [half_dim, *filter_list]
@@ -117,28 +122,65 @@ class Enformer(nn.Module):
             ))
 
         self.conv_tower = nn.Sequential(*conv_layers)
+
+        # transformer
+
+        transformer = []
+        for _ in range(depth):
+            transformer.append(nn.Sequential(
+                Residual(nn.Sequential(
+                    nn.LayerNorm(dim),
+                    nn.Linear(dim, dim * 2),
+                    nn.Dropout(dropout_rate),
+                    nn.ReLU(),
+                    nn.Linear(dim * 2, dim),
+                    nn.Dropout(dropout_rate)
+                ))
+            ))
+
+        self.transformer = nn.Sequential(
+            Rearrange('b d n -> b n d'),
+            *transformer
+        )
+
+        # target cropping
+
         self.target_length = target_length
         self.crop_final = TargetLengthCrop(target_length)
 
+        # final pointwise
+
         self.final_pointwise = nn.Sequential(
-            nn.Conv1d(filter_list[-1], twice_dim, 1),
+            nn.Linear(filter_list[-1], twice_dim, 1),
             nn.Dropout(dropout_rate / 8),
             GELU()
         )
 
+        # create trunk sequential module
+
+        self._trunk = nn.Sequential(
+            self.stem,
+            self.conv_tower,
+            self.transformer,
+            self.crop_final,
+            self.final_pointwise
+        )
+
+        # create final heads for human and mouse
+
         self._heads = map_values(lambda features: nn.Sequential(
-            nn.Conv1d(twice_dim, features, 1),
+            nn.Linear(twice_dim, features, 1),
             nn.Softplus()
         ), output_heads)
+
+    @property
+    def trunk(self):
+        return self._trunk
 
     @property
     def heads(self):
         return self._heads
     
     def forward(self, x):
-        x = rearrange(x.float(), 'b n d -> b d n')
-        x = self.stem(x)
-        x = self.conv_tower(x)
-        x = self.crop_final(x)
-        x = self.final_pointwise(x)
+        x = self._trunk(x.float())
         return map_values(lambda fn: fn(x), self._heads)

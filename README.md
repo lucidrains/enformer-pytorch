@@ -18,10 +18,16 @@ import torch
 import torch.nn.functional as F
 from enformer_pytorch.enformer_pytorch import Enformer, SEQUENCE_LENGTH
 
+model = Enformer(
+    dim = 1536,
+    depth = 11,
+    heads = 8,
+    output_heads = dict(human = 5313, mouse= 1643),
+    target_length = 896,
+)
+
 seq = torch.randint(0, 5, (1, SEQUENCE_LENGTH)) # for NAGCT
 one_hot_seq = F.one_hot(seq, num_classes = 5)
-
-model = Enformer()
 output = model(one_hot_seq)
 
 output['human'] # (1, 896, 5313)
