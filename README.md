@@ -13,10 +13,8 @@ $ pip install enformer-pytorch
 ## Usage
 
 ```python
-import random
 import torch
-import torch.nn.functional as F
-from enformer_pytorch.enformer_pytorch import Enformer, SEQUENCE_LENGTH
+from enformer_pytorch import Enformer, SEQUENCE_LENGTH
 
 model = Enformer(
     dim = 1536,
@@ -27,8 +25,7 @@ model = Enformer(
 )
 
 seq = torch.randint(0, 5, (1, SEQUENCE_LENGTH)) # for NAGCT
-one_hot_seq = F.one_hot(seq, num_classes = 5)
-output = model(one_hot_seq)
+output = model(seq)
 
 output['human'] # (1, 896, 5313)
 output['mouse'] # (1, 896, 1643)

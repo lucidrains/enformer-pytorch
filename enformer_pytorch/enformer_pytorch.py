@@ -176,6 +176,7 @@ class Enformer(nn.Module):
         pos_dropout = 0.01
     ):
         super().__init__()
+        self.num_alphabet = num_alphabet
         half_dim = dim // 2
         twice_dim = dim * 2
 
@@ -275,5 +276,8 @@ class Enformer(nn.Module):
         return self._heads
     
     def forward(self, x):
+        if x.dtype == torch.long:
+            x = F.one_hot(x, num_classes = self.num_alphabet)
+
         x = self._trunk(x.float())
         return map_values(lambda fn: fn(x), self._heads)
