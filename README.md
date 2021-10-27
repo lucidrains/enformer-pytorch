@@ -18,8 +18,8 @@ import torch
 import torch.nn.functional as F
 from enformer_pytorch.enformer_pytorch import Enformer, SEQUENCE_LENGTH
 
-seq = torch.randint(0, 4, (1, SEQUENCE_LENGTH))
-one_hot_seq = F.one_hot(seq, num_classes = 4)
+seq = torch.randint(0, 5, (1, SEQUENCE_LENGTH)) # for NAGCT
+one_hot_seq = F.one_hot(seq, num_classes = 5)
 
 model = Enformer()
 output = model(one_hot_seq)
