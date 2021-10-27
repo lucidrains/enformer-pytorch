@@ -102,7 +102,8 @@ class Attention(nn.Module):
         dim_key = 64,
         dim_value = 64,
         dropout = 0.,
-        pos_dropout = 0.
+        pos_dropout = 0.,
+        num_rel_pos_features = None
     ):
         super().__init__()
         self.scale = dim_key ** -0.5
@@ -116,9 +117,15 @@ class Attention(nn.Module):
         nn.init.zeros_(self.to_out.weight)
         nn.init.zeros_(self.to_out.bias)
 
+        # relative positional encoding
+
+        self.num_rel_pos_features = num_rel_pos_features
+
         self.to_rel_k = nn.Linear(1, dim_key * heads, bias = False)
         self.rel_content_bias = nn.Parameter(torch.randn(1, heads, 1, dim_key))
         self.rel_pos_bias = nn.Parameter(torch.randn(1, heads, 1, dim_key))
+
+        # dropouts
 
         self.pos_dropout = nn.Dropout(pos_dropout)
         self.attn_dropout = nn.Dropout(dropout)
@@ -164,7 +171,9 @@ class Enformer(nn.Module):
         target_length = TARGET_LENGTH,
         dropout_rate = 0.4,
         num_alphabet = 5,
-        attn_dim_key = 64
+        attn_dim_key = 64,
+        attn_dropout = 0.05,
+        pos_dropout = 0.01
     ):
         super().__init__()
         half_dim = dim // 2
@@ -205,7 +214,10 @@ class Enformer(nn.Module):
                         dim,
                         heads = heads,
                         dim_key = attn_dim_key,
-                        dim_value = dim // heads
+                        dim_value = dim // heads,
+                        dropout = attn_dropout,
+                        pos_dropout = pos_dropout,
+                        num_rel_pos_features = dim // heads
                     ),
                     nn.Dropout(dropout_rate)
                 )),
