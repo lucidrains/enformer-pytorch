@@ -319,10 +319,10 @@ class Enformer(nn.Module):
 
         # create final heads for human and mouse
 
-        self._heads = map_values(lambda features: nn.Sequential(
+        self._heads = nn.ModuleDict(map_values(lambda features: nn.Sequential(
             nn.Linear(twice_dim, features, 1),
             nn.Softplus()
-        ), output_heads)
+        ), output_heads))
 
     @property
     def trunk(self):
