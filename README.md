@@ -4,6 +4,30 @@
 
 Implementation of <a href="https://deepmind.com/blog/article/enformer">Enformer</a>, Deepmind's attention network for predicting gene expression, in Pytorch. The original tensorflow sonnet code can be found <a href="https://github.com/deepmind/deepmind-research/tree/master/enformer">here</a>.
 
+## Install
+
+```bash
+$ pip install enformer-pytorch
+```
+
+## Usage
+
+```python
+import random
+import torch
+import torch.nn.functional as F
+from enformer_pytorch.enformer_pytorch import Enformer, SEQUENCE_LENGTH
+
+seq = torch.randint(0, 4, (1, SEQUENCE_LENGTH))
+one_hot_seq = F.one_hot(seq, num_classes = 4)
+
+model = Enformer()
+output = model(one_hot_seq)
+
+output['human'] # (1, 896, 5313)
+output['mouse'] # (1, 896, 1643)
+```
+
 ## Citations
 
 ```bibtex
