@@ -43,10 +43,26 @@ def get_positional_features_central_mask(positions, features, seq_len):
     center_widths = center_widths - 1
     return (center_widths[None, ...] > positions.abs()[..., None]).float()
 
-def get_positional_features_gamma(positions, features, seq_len):
-    center_widths = 2 ** torch.arange(1, features + 1, device = positions.device).float()
-    center_widths = center_widths - 1
-    return (center_widths[None, ...] > positions.abs()[..., None]).float()
+def gamma_pdf(x, concentration, rate):
+    log_unnormalized_prob = torch.xlogy(concentration - 1., x) - rate * x
+    log_normalization = (torch.lgamma(concentration) - concentration * torch.log(rate))
+    return torch.exp(log_unnormalized_prob - log_normalization)
+
+def get_positional_features_gamma(positions, features, seq_len, stddev = None, start_mean = None, eps = 1e-8):
+    if not exists(stddev):
+        stddev = seq_len / (2 * features)
+
+    if not exists(start_mean):
+        start_mean = seq_len / features
+
+    mean = torch.linspace(start_mean, seq_len, features)
+    mean = mean[None, ...]
+    concentration = (mean / stddev) ** 2
+    rate = mean / stddev ** 2
+    probabilities = gamma_pdf(positions.float().abs()[..., None], concentration, rate)
+    probabilities = probabilities + eps
+    outputs = probabilities / torch.amax(probabilities)
+    return outputs
 
 def get_positional_embed(seq_len, feature_size, device):
     distances = torch.arange(-seq_len + 1, seq_len, device = device)
