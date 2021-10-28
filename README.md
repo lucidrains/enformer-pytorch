@@ -14,7 +14,7 @@ $ pip install enformer-pytorch
 
 ```python
 import torch
-from enformer_pytorch import Enformer, SEQUENCE_LENGTH
+from enformer_pytorch import Enformer
 
 model = Enformer(
     dim = 1536,
@@ -24,7 +24,7 @@ model = Enformer(
     target_length = 896,
 )
 
-seq = torch.randint(0, 5, (1, SEQUENCE_LENGTH)) # for NAGCT
+seq = torch.randint(0, 5, (1, 196_608)) # for NAGCT
 output = model(seq)
 
 output['human'] # (1, 896, 5313)
