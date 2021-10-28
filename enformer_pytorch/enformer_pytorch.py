@@ -333,8 +333,17 @@ class Enformer(nn.Module):
         return self._heads
     
     def forward(self, x):
+        no_batch = (x.ndim == 1)
+        if no_batch:
+            x = rearrange(x, 'n -> () n')
+
         if x.dtype == torch.long:
             x = F.one_hot(x, num_classes = self.num_alphabet)
 
         x = self._trunk(x.float())
-        return map_values(lambda fn: fn(x), self._heads)
+        out = map_values(lambda fn: fn(x), self._heads)
+
+        if no_batch:
+            out = map_values(lambda t: rearrange(t, '() ... -> ...'), out)
+
+        return out
