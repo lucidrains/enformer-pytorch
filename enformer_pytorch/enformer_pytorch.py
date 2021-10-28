@@ -55,7 +55,7 @@ def get_positional_features_gamma(positions, features, seq_len, stddev = None, s
     if not exists(start_mean):
         start_mean = seq_len / features
 
-    mean = torch.linspace(start_mean, seq_len, features)
+    mean = torch.linspace(start_mean, seq_len, features, device = positions.device)
     mean = mean[None, ...]
     concentration = (mean / stddev) ** 2
     rate = mean / stddev ** 2
