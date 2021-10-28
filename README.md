@@ -31,6 +31,10 @@ output['human'] # (1, 896, 5313)
 output['mouse'] # (1, 896, 1643)
 ```
 
+## Todo
+
+- [ ] script to load weights from TFHub
+
 ## Citations
 
 ```bibtex
