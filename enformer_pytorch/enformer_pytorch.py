@@ -119,13 +119,24 @@ class AttentionPool(nn.Module):
         self.to_attn_logits = nn.Parameter(torch.eye(dim))
 
     def forward(self, x):
-        remainder = x.shape[-1] % self.pool_size
-        if remainder > 0:
+        b, _, n = x.shape
+        remainder = n % self.pool_size
+        needs_padding = remainder > 0
+
+        if needs_padding:
             x = F.pad(x, (0, remainder), value = 0)
+            mask = torch.zeros((b, 1, n), dtype = torch.bool, device = x.device)
+            mask = F.pad(mask, (0, remainder), value = True)
 
         attn_logits = einsum('b d n, d e -> b e n', x, self.to_attn_logits)
         x = self.pool_fn(x)
-        attn = self.pool_fn(attn_logits).softmax(dim = -1)
+        logits = self.pool_fn(attn_logits)
+
+        if needs_padding:
+            mask_value = -torch.finfo(logits.dtype).max
+            logits = logits.masked_fill(self.pool_fn(mask), mask_value)
+
+        attn = logits.softmax(dim = -1)
         return (x * attn).sum(dim = -1)
 
 class TargetLengthCrop(nn.Module):
