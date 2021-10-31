@@ -212,6 +212,7 @@ class Attention(nn.Module):
         content_logits = einsum('b h i d, b h j d -> b h i j', q + self.rel_content_bias, k)
 
         positions = get_positional_embed(n, self.num_rel_pos_features, device)
+        positions = self.pos_dropout(positions)
         rel_k = self.to_rel_k(positions)
 
         rel_k = rearrange(rel_k, 'n (h d) -> h n d', h = h)
