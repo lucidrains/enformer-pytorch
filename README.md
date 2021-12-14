@@ -24,11 +24,58 @@ model = Enformer(
     target_length = 896,
 )
 
-seq = torch.randint(0, 5, (1, 196_608)) # for NAGCT
+seq = torch.randint(0, 4, (1, 196_608)) # for AGCT
 output = model(seq)
 
 output['human'] # (1, 896, 5313)
 output['mouse'] # (1, 896, 1643)
+```
+
+You can also directly pass in the sequence as one-hot encodings, which must be float values
+
+```python
+import torch
+import torch.nn.functional as F
+from enformer_pytorch import Enformer
+
+model = Enformer(
+    dim = 1536,
+    depth = 11,
+    heads = 8,
+    output_heads = dict(human = 5313, mouse = 1643),
+    target_length = 896,
+)
+
+seq = torch.randint(0, 4, (1, 196_608))
+one_hot = F.one_hot(seq, num_classes = 4).float()
+
+output = model(one_hot)
+
+output['human'] # (1, 896, 5313)
+output['mouse'] # (1, 896, 1643)
+```
+
+Finally, one can fetch the embeddings, for fine-tuning and otherwise, by setting the `return_embeddings` flag to be `True` on forward
+
+```python
+import torch
+import torch.nn.functional as F
+from enformer_pytorch import Enformer
+
+model = Enformer(
+    dim = 1536,
+    depth = 11,
+    heads = 8,
+    output_heads = dict(human = 5313, mouse = 1643),
+    target_length = 896,
+)
+
+seq = torch.randint(0, 4, (1, 196_608))
+one_hot = F.one_hot(seq, num_classes = 4).float()
+
+output, embeddings = model(one_hot, return_embeddings = True)
+
+embeddings # (1, 896, 3072)
 ```
 
 ## Todo

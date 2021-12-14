@@ -239,7 +239,7 @@ class Enformer(nn.Module):
         output_heads = dict(human = 5313, mouse= 1643),
         target_length = TARGET_LENGTH,
         dropout_rate = 0.4,
-        num_alphabet = 5,
+        num_alphabet = 4,
         attn_dim_key = 64,
         attn_dropout = 0.05,
         pos_dropout = 0.01
@@ -344,18 +344,29 @@ class Enformer(nn.Module):
     def heads(self):
         return self._heads
     
-    def forward(self, x):
-        no_batch = (x.ndim == 1)
-        if no_batch:
-            x = rearrange(x, 'n -> () n')
+    def forward(
+        self,
+        x,
+        return_embeddings = False
+    ):
+        dtype = x.dtype
 
         if x.dtype == torch.long:
-            x = F.one_hot(x, num_classes = self.num_alphabet)
+            x = F.one_hot(x, num_classes = self.num_alphabet).float()
 
-        x = self._trunk(x.float())
+        no_batch = x.ndim == 2
+
+        if no_batch:
+            x = rearrange(x, '... -> () ...')
+
+        x = self._trunk(x)
         out = map_values(lambda fn: fn(x), self._heads)
 
         if no_batch:
             out = map_values(lambda t: rearrange(t, '() ... -> ...'), out)
+            x = rearrange(x, '() ... -> ...')
+
+        if return_embeddings:
+            return out, x
 
         return out
