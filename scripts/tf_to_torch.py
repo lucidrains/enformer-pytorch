@@ -1,5 +1,3 @@
-from einops import rearrange
-
 def copy_bn(mod, vars, path):
   bn_running_mean = vars[f'{path}moving_mean/average:0']
   bn_running_var = vars[f'{path}moving_variance/average:0']
@@ -20,6 +18,14 @@ def copy_conv(mod, vars, path):
 def copy_attn_pool(mod, vars, path):
   attn_pool_proj = vars[path]
   mod.to_attn_logits.data.copy_(attn_pool_proj)
+
+def copy_linear(mod, vars, path, has_bias = True):
+  weight = vars[f'{path}w:0']
+  mod.weight.data.copy_(rearrange(weight, 'i o -> o i'))
+
+  if has_bias:
+    bias = vars[f'{path}b:0']
+    mod.bias.data.copy_(bias)
 
 def get_tf_vars(tf_model):
   return {v.name: (torch.from_numpy(v.numpy()) if isinstance(v.numpy(), np.ndarray) else None) for v in tf_model.variables}
@@ -65,4 +71,11 @@ def copy_tf_to_pytorch(tf_model, pytorch_model):
 
   copy_bn(final_bn, tf_vars, 'enformer/trunk/final_pointwise/final_pointwise/conv_block/conv_block/batch_norm/')
   copy_conv(final_conv, tf_vars, 'enformer/trunk/final_pointwise/final_pointwise/conv_block/conv_block/conv1_d/')
+
+  human_linear = pytorch_model._heads['human'][0]
+  mouse_linear = pytorch_model._heads['mouse'][0]
+
+  copy_linear(human_linear, tf_vars, 'enformer/heads/head_human/head_human/linear/')
+  copy_linear(mouse_linear, tf_vars, 'enformer/heads/head_mouse/head_mouse/linear/')
+
   print('success')
