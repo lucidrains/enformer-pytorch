@@ -69,6 +69,7 @@ def copy_tf_to_pytorch(tf_model, pytorch_model):
     copy_attn_pool(tower_attn_pool, tf_vars, attn_pool_path)
 
   for ind, transformer_block in enumerate(pytorch_model.transformer):
+    attn_ln_path = f'enformer/trunk/transformer/transformer/transformer_block_{ind}/transformer_block_{ind}/mha/mha/layer_norm/'
     ff_ln_path = f'enformer/trunk/transformer/transformer/transformer_block_{ind}/transformer_block_{ind}/mlp/mlp/layer_norm/'
 
     # https://github.com/deepmind/deepmind-research/blob/master/enformer/enformer.py#L119
@@ -76,10 +77,15 @@ def copy_tf_to_pytorch(tf_model, pytorch_model):
     ff_linear1_path = f'enformer/trunk/transformer/transformer/transformer_block_{ind}/transformer_block_{ind}/mlp/mlp/project_in/'
     ff_linear2_path = f'enformer/trunk/transformer/transformer/transformer_block_{ind}/transformer_block_{ind}/mlp/mlp/project_out/'
 
+    attn = transformer_block[0]
+    attn_ln = attn.fn[0]
+
     ff = transformer_block[-1]
     ff_ln = ff.fn[0]
     ff_linear1 = ff.fn[1]
     ff_linear2 = ff.fn[4]
+
+    copy_ln(attn_ln, tf_vars, attn_ln_path)
 
     copy_ln(ff_ln, tf_vars, ff_ln_path)
     copy_linear(ff_linear1, tf_vars, ff_linear1_path)
