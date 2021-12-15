@@ -314,7 +314,9 @@ class Enformer(nn.Module):
         # final pointwise
 
         self.final_pointwise = nn.Sequential(
-            nn.Linear(filter_list[-1], twice_dim, 1),
+            Rearrange('b n d -> b d n'),
+            ConvBlock(filter_list[-1], twice_dim, 1),
+            Rearrange('b d n -> b n d'),
             nn.Dropout(dropout_rate / 8),
             GELU()
         )
