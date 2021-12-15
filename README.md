@@ -80,7 +80,9 @@ embeddings # (1, 896, 3072)
 
 ## Todo
 
-- [ ] script to load weights from TFHub
+- [x] script to load weights from trained tensorflow enformer model to pytorch model
+- [ ] add loss wrapper with poisson loss
+- [ ] train enformer model
 
 ## Citations
 

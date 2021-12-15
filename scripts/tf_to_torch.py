@@ -1,3 +1,5 @@
+from einops import rearrange
+
 def copy_bn(mod, vars, path):
   bn_running_mean = vars[f'{path}moving_mean/average:0']
   bn_running_var = vars[f'{path}moving_variance/average:0']
@@ -70,6 +72,15 @@ def copy_tf_to_pytorch(tf_model, pytorch_model):
 
   for ind, transformer_block in enumerate(pytorch_model.transformer):
     attn_ln_path = f'enformer/trunk/transformer/transformer/transformer_block_{ind}/transformer_block_{ind}/mha/mha/layer_norm/'
+    attn_q_path = f'enformer/trunk/transformer/transformer/transformer_block_{ind}/transformer_block_{ind}/mha/mha/attention_{ind}/q_layer/'
+    attn_k_path = f'enformer/trunk/transformer/transformer/transformer_block_{ind}/transformer_block_{ind}/mha/mha/attention_{ind}/k_layer/'
+    attn_r_k_path = f'enformer/trunk/transformer/transformer/transformer_block_{ind}/transformer_block_{ind}/mha/mha/attention_{ind}/r_k_layer/'
+    attn_v_path = f'enformer/trunk/transformer/transformer/transformer_block_{ind}/transformer_block_{ind}/mha/mha/attention_{ind}/v_layer/'
+    attn_out_path = f'enformer/trunk/transformer/transformer/transformer_block_{ind}/transformer_block_{ind}/mha/mha/attention_{ind}/embedding_layer/'
+
+    attn_content_bias_path = f'enformer/trunk/transformer/transformer/transformer_block_{ind}/transformer_block_{ind}/mha/mha/attention_{ind}/r_w_bias:0'
+    attn_rel_bias_path = f'enformer/trunk/transformer/transformer/transformer_block_{ind}/transformer_block_{ind}/mha/mha/attention_{ind}/r_r_bias:0'
+
     ff_ln_path = f'enformer/trunk/transformer/transformer/transformer_block_{ind}/transformer_block_{ind}/mlp/mlp/layer_norm/'
 
     # https://github.com/deepmind/deepmind-research/blob/master/enformer/enformer.py#L119
@@ -79,6 +90,16 @@ def copy_tf_to_pytorch(tf_model, pytorch_model):
 
     attn = transformer_block[0]
     attn_ln = attn.fn[0]
+    mha = attn.fn[1]
+
+    copy_linear(mha.to_q, tf_vars, attn_q_path, has_bias = False)
+    copy_linear(mha.to_k, tf_vars, attn_k_path, has_bias = False)
+    copy_linear(mha.to_rel_k, tf_vars, attn_r_k_path, has_bias = False)
+    copy_linear(mha.to_v, tf_vars, attn_v_path, has_bias = False)
+    copy_linear(mha.to_out, tf_vars, attn_out_path)
+
+    mha.rel_content_bias.data.copy_(tf_vars[attn_content_bias_path])
+    mha.rel_pos_bias.data.copy_(tf_vars[attn_rel_bias_path])
 
     ff = transformer_block[-1]
     ff_ln = ff.fn[0]
