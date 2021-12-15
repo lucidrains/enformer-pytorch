@@ -82,6 +82,7 @@ embeddings # (1, 896, 3072)
 
 - [x] script to load weights from trained tensorflow enformer model to pytorch model
 - [ ] add loss wrapper with poisson loss
+- [ ] move the metrics code over to pytorch as well
 - [ ] train enformer model
 
 ## Citations
