@@ -78,6 +78,44 @@ output, embeddings = model(one_hot, return_embeddings = True)
 embeddings # (1, 896, 3072)
 ```
 
+For training, you can directly pass the head and target in to get the poisson loss
+
+```python
+import torch
+import torch.nn.functional as F
+from enformer_pytorch import Enformer
+
+model = Enformer(
+    dim = 1536,
+    depth = 11,
+    heads = 8,
+    output_heads = dict(human = 5313, mouse = 1643),
+    target_length = 200,
+).cuda()
+
+seq = torch.randint(0, 4, (196_608 // 2,)).cuda()
+target = torch.randn(200, 5313).cuda()
+
+loss = model(
+    seq,
+    head = 'human',
+    target = target
+)
+
+loss.backward()
+
+# after much training
+
+corr_coef = model(
+    seq,
+    head = 'human',
+    target = target,
+    return_corr_coef = True
+)
+
+corr_coef # pearson R, used as a metric in the paper
+```
+
 ## Todo
 
 - [x] script to load weights from trained tensorflow enformer model to pytorch model

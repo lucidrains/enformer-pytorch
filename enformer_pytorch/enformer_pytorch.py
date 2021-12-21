@@ -29,6 +29,26 @@ def exponential_linspace_int(start, end, num, divisible_by = 1):
     base = math.exp(math.log(end / start) / (num - 1))
     return [_round(start * base**i) for i in range(num)]
 
+def log(t, eps = 1e-20):
+    return torch.log(t.clamp(min = eps))
+
+# losses and metrics
+
+def poisson_loss(pred, target):
+    return (pred - target * log(pred)).mean()
+
+def pearson_corr_coef(x, y, eps = 1e-8):
+    x2 = x * x
+    y2 = y * y
+    xy = x * y
+    ex = x.mean(dim = 1)
+    ey = y.mean(dim = 1)
+    exy = xy.mean(dim = 1)
+    ex2 = x2.mean(dim = 1)
+    ey2 = y2.mean(dim = 1)
+    r = (exy - ex * ey) / (torch.sqrt(ex2 - (ex * ex)) * torch.sqrt(ey2 - (ey * ey)) + eps)
+    return r.mean(dim = -1)
+
 # relative positional encoding functions
 
 def get_positional_features_exponential(positions, features, seq_len, min_half_life = 3.):
@@ -349,7 +369,10 @@ class Enformer(nn.Module):
     def forward(
         self,
         x,
-        return_embeddings = False
+        target = None,
+        return_corr_coef = False,
+        return_embeddings = False,
+        head = None
     ):
         dtype = x.dtype
 
@@ -367,6 +390,18 @@ class Enformer(nn.Module):
         if no_batch:
             out = map_values(lambda t: rearrange(t, '() ... -> ...'), out)
             x = rearrange(x, '() ... -> ...')
+
+        if exists(head):
+            assert head in self._heads, f'head {head} not found'
+            out = out[head]
+
+        if exists(target):
+            assert exists(head), 'head must be passed in if one were to calculate loss directly with targets'
+
+            if return_corr_coef:
+                return pearson_corr_coef(out, target)
+
+            return poisson_loss(out, target)
 
         if return_embeddings:
             return out, x
