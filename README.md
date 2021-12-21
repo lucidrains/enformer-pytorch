@@ -121,7 +121,7 @@ corr_coef # pearson R, used as a metric in the paper
 - [x] script to load weights from trained tensorflow enformer model to pytorch model
 - [x] add loss wrapper with poisson loss
 - [x] move the metrics code over to pytorch as well
-- [ ] train enformer model - in progress
+- [ ] train enformer model - in progress tinyurl.com/2p9a4d5x
 
 ## Citations
 
