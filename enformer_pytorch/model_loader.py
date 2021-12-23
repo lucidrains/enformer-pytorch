@@ -59,4 +59,6 @@ def load_pretrained_model(slug, force = False):
 
     model = Enformer(**config['params'])
     model.load_state_dict(torch.load(str(save_path)))
+
+    print(f'loaded {slug} successfully')
     return model
