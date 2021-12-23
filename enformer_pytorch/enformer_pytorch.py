@@ -354,7 +354,7 @@ class Enformer(nn.Module):
         # create final heads for human and mouse
 
         self._heads = nn.ModuleDict(map_values(lambda features: nn.Sequential(
-            nn.Linear(twice_dim, features, 1),
+            nn.Linear(twice_dim, features),
             nn.Softplus()
         ), output_heads))
 
