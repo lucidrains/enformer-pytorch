@@ -1,15 +1,18 @@
 from einops import rearrange
 
 def copy_bn(mod, vars, path):
-    bn_running_mean = vars[f'{path}moving_mean/average:0']
-    bn_running_var = vars[f'{path}moving_variance/average:0']
     bn_offset = vars[f'{path}offset:0']
     bn_scale = vars[f'{path}scale:0']
 
-    mod.running_var.data.copy_(rearrange(bn_running_var, '() () d -> d'))
-    mod.running_mean.data.copy_(rearrange(bn_running_mean, '() () d -> d'))
+    ema_path = '/'.join(path.split('/')[:-3]) + '/'
+    bn_running_mean = vars[f'{ema_path}moving_mean/average:0']
+    bn_running_var = vars[f'{ema_path}moving_variance/average:0']
+
     mod.weight.data.copy_(bn_scale)
     mod.bias.data.copy_(bn_offset)
+
+    mod.running_var.data.copy_(rearrange(bn_running_var, '() () d -> d'))
+    mod.running_mean.data.copy_(rearrange(bn_running_mean, '() () d -> d'))
 
 def copy_conv(mod, vars, path):
     bias = vars[f'{path}b:0']
@@ -71,7 +74,7 @@ def copy_tf_to_pytorch(tf_model, pytorch_model):
         copy_conv(tower_point_conv, tf_vars, point_conv_path)
         copy_attn_pool(tower_attn_pool, tf_vars, attn_pool_path)
 
-    for ind, transformer_block in enumerate(pytorch_model.transformer):
+    for ind, transformer_block in enumerate(pytorch_model.transformer[1:]):
         attn_ln_path = f'enformer/trunk/transformer/transformer/transformer_block_{ind}/transformer_block_{ind}/mha/mha/layer_norm/'
         attn_q_path = f'enformer/trunk/transformer/transformer/transformer_block_{ind}/transformer_block_{ind}/mha/mha/attention_{ind}/q_layer/'
         attn_k_path = f'enformer/trunk/transformer/transformer/transformer_block_{ind}/transformer_block_{ind}/mha/mha/attention_{ind}/k_layer/'
