@@ -134,6 +134,10 @@ model = load_pretrained_model('preview')
 # do your fine-tuning
 ```
 
+## Appreciation
+
+Special thanks goes out to <a href="https://www.eleuther.ai/">EleutherAI</a> for providing the resources to retrain the model in an acceptable amount of time
+
 ## Todo
 
 - [x] script to load weights from trained tensorflow enformer model to pytorch model
