@@ -1,1 +1,2 @@
 from enformer_pytorch.enformer_pytorch import Enformer, SEQUENCE_LENGTH, AttentionPool
+from enformer_pytorch.model_loader import load_pretrained_model

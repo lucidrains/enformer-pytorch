@@ -116,12 +116,30 @@ corr_coef = model(
 corr_coef # pearson R, used as a metric in the paper
 ```
 
+## Pretrained Model
+
+To use a pretrained model (may not be of the same quality as the one in the paper yet), first install `gdown`
+
+```bash
+$ pip install gdown
+```
+
+Then
+
+```python
+from enformer_pytorch import load_pretrained_model
+
+model = load_pretrained_model('preview')
+
+# do your fine-tuning
+```
+
 ## Todo
 
 - [x] script to load weights from trained tensorflow enformer model to pytorch model
 - [x] add loss wrapper with poisson loss
 - [x] move the metrics code over to pytorch as well
-- [ ] train enformer model - in progress tinyurl.com/2p9a4d5x
+- [x] train enformer model
 
 ## Citations
 
