@@ -8,8 +8,23 @@ def exists(val):
     return val is not None
 
 @contextmanager
-def null_context():
+def freeze_batchnorm_context(model):
+    bns = [m for m in model.modules() if isinstance(m, nn.BatchNorm1d)]
+    bn_orig_state = [dict(track_running_stats = bn.track_running_stats, training = bn.training, requires_grad = [p.requires_grad for p in bn.parameters()]) for bn in bns]
+
+    for bn in bns:
+        bn.eval()
+        bn.requires_grad = False
+        bn.track_running_stats = False
+
     yield
+
+    for bn, state in zip(bns, bn_orig_state):
+        bn.train(state['training'])
+        bn.track_running_stats = state['track_running_stats']
+
+        for p, requires_grad in zip(bn.parameters(), state['requires_grad']):
+            p.requires_grad = requires_grad
 
 class ContextAdapterWrapper(nn.Module):
     def __init__(
@@ -34,9 +49,9 @@ class ContextAdapterWrapper(nn.Module):
         target = None,
         freeze_enformer = False
     ):
-        enformer_context = null_context if freeze_enformer else torch.no_grad
+        enformer_context = freeze_batchnorm_context(self.enformer) if not freeze_enformer else torch.no_grad()
 
-        with enformer_context():
+        with enformer_context:
             _, embeddings = self.enformer(seq, return_embeddings = True)
 
             if freeze_enformer:
