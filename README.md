@@ -135,7 +135,35 @@ model = load_pretrained_model('preview')
 
 ## Fine-tuning (wip)
 
-This repository will also allow for easy fine-tuning of Enformer. For starters, the following example shows a single step for finetuning on contextual data (cell type, transcription factor, etc)
+This repository will also allow for easy fine-tuning of Enformer.
+
+Fine-tuning on new tracks
+
+```python
+import torch
+from enformer_pytorch import Enformer
+from enformer_pytorch.finetune import HeadAdapterWrapper
+
+enformer = Enformer(
+    dim = 1536,
+    depth = 1,
+    heads = 8,
+    target_length = 200,
+)
+
+model = HeadAdapterWrapper(
+    enformer = enformer,
+    num_tracks = 128
+).cuda()
+
+seq = torch.randint(0, 4, (1, 196_608 // 2,)).cuda()
+target = torch.randn(1, 200, 128).cuda()  # 128 tracks
+
+loss = model(seq, target = target)
+loss.backward()
+```
+
+Finetuning on contextual data (cell type, transcription factor, etc)
 
 ```python
 import torch
@@ -151,7 +179,6 @@ enformer = Enformer(
 
 model = ContextAdapterWrapper(
     enformer = enformer,
-    enformer_dim = 1536,
     context_dim = 1024
 ).cuda()
 

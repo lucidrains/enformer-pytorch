@@ -265,6 +265,7 @@ class Enformer(nn.Module):
         pos_dropout = 0.01
     ):
         super().__init__()
+        self.dim = dim
         self.num_alphabet = num_alphabet
         half_dim = dim // 2
         twice_dim = dim * 2
