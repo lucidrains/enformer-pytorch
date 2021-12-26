@@ -82,7 +82,6 @@ For training, you can directly pass the head and target in to get the poisson lo
 
 ```python
 import torch
-import torch.nn.functional as F
 from enformer_pytorch import Enformer
 
 model = Enformer(
@@ -134,6 +133,42 @@ model = load_pretrained_model('preview')
 # do your fine-tuning
 ```
 
+## Fine-tuning (wip)
+
+This repository will also allow for easy fine-tuning of Enformer. For starters, the following example shows a single step for finetuning on contextual data (cell type, transcription factor, etc)
+
+```python
+import torch
+from enformer_pytorch import Enformer
+from enformer_pytorch.finetune import ContextAdapterWrapper
+
+enformer = Enformer(
+    dim = 1536,
+    depth = 1,
+    heads = 8,
+    target_length = 200,
+)
+
+model = ContextAdapterWrapper(
+    enformer = enformer,
+    enformer_dim = 1536,
+    context_dim = 1024
+).cuda()
+
+seq = torch.randint(0, 4, (1, 196_608 // 2,)).cuda()
+
+target = torch.randn(1, 200, 4).cuda()  # 4 tracks
+context = torch.randn(4, 1024).cuda()   # 4 contexts for the different 'tracks'
+
+loss = model(
+    seq,
+    context = context,
+    target = target
+)
+
+loss.backward()
+```
+
 ## Appreciation
 
 Special thanks goes out to <a href="https://www.eleuther.ai/">EleutherAI</a> for providing the resources to retrain the model in an acceptable amount of time
@@ -144,6 +179,9 @@ Special thanks goes out to <a href="https://www.eleuther.ai/">EleutherAI</a> for
 - [x] add loss wrapper with poisson loss
 - [x] move the metrics code over to pytorch as well
 - [x] train enformer model
+- [ ] allow for plain fine-tune with fixed static context
+- [ ] build context manager for fine-tuning with unfrozen enformer but with frozen batchnorm
+- [ ] allow for fine tuning with only unfrozen layernorms (technique from fine tuning transformers)
 
 ## Citations
 
