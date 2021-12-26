@@ -179,8 +179,8 @@ Special thanks goes out to <a href="https://www.eleuther.ai/">EleutherAI</a> for
 - [x] add loss wrapper with poisson loss
 - [x] move the metrics code over to pytorch as well
 - [x] train enformer model
+- [x] build context manager for fine-tuning with unfrozen enformer but with frozen batchnorm
 - [ ] allow for plain fine-tune with fixed static context
-- [ ] build context manager for fine-tuning with unfrozen enformer but with frozen batchnorm
 - [ ] allow for fine tuning with only unfrozen layernorms (technique from fine tuning transformers)
 
 ## Citations
