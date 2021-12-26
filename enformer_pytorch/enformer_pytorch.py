@@ -373,6 +373,7 @@ class Enformer(nn.Module):
         target = None,
         return_corr_coef = False,
         return_embeddings = False,
+        return_only_embeddings = False,
         head = None
     ):
         dtype = x.dtype
@@ -386,11 +387,14 @@ class Enformer(nn.Module):
             x = rearrange(x, '... -> () ...')
 
         x = self._trunk(x)
-        out = map_values(lambda fn: fn(x), self._heads)
 
         if no_batch:
-            out = map_values(lambda t: rearrange(t, '() ... -> ...'), out)
             x = rearrange(x, '() ... -> ...')
+
+        if return_only_embeddings:
+            return x
+
+        out = map_values(lambda fn: fn(x), self._heads)
 
         if exists(head):
             assert head in self._heads, f'head {head} not found'

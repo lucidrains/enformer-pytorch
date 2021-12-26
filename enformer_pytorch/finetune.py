@@ -53,7 +53,7 @@ class HeadAdapterWrapper(nn.Module):
         enformer_context = freeze_batchnorm_context(self.enformer) if not freeze_enformer else torch.no_grad()
 
         with enformer_context:
-            _, embeddings = self.enformer(seq, return_embeddings = True)
+            embeddings = self.enformer(seq, return_only_embeddings = True)
 
             if freeze_enformer:
                 embeddings.detach_()
@@ -90,7 +90,7 @@ class ContextAdapterWrapper(nn.Module):
         enformer_context = freeze_batchnorm_context(self.enformer) if not freeze_enformer else torch.no_grad()
 
         with enformer_context:
-            _, embeddings = self.enformer(seq, return_embeddings = True)
+            embeddings = self.enformer(seq, return_only_embeddings = True)
 
             if freeze_enformer:
                 embeddings.detach_()
