@@ -11,6 +11,9 @@ def exists(val):
 def default(val, d):
     return val if exists(val) else d
 
+def remove_nones(d):
+    return dict((k, v) for k, v in d.items() if exists(v))
+
 # make gdown optional dep
 
 try:
@@ -32,12 +35,26 @@ CONFIG = dict(
             output_heads = dict(human = 5313, mouse= 1643),
             target_length = 896
         )
+    ),
+    corr_coef_obj = dict(
+        id = '18gMf2gIbU5LV09_2w8yMjEesVzwu4sGz',
+        params = dict(
+            dim = 1536,
+            depth = 11,
+            heads = 8,
+            output_heads = dict(human = 5313, mouse= 1643),
+            target_length = 896
+        )
     )
 )
 
 # functions
 
-def load_pretrained_model(slug, force = False):
+def load_pretrained_model(
+    slug,
+    force = False,
+    target_length = None
+):
     if slug not in CONFIG:
         print(f'model {slug} not found among available choices: [{", ".join(CONFIG.keys())}]')
         exit()
@@ -56,6 +73,9 @@ def load_pretrained_model(slug, force = False):
         gdown.download(url, str(save_path), quiet = False)
 
     # load
+
+    override_params = remove_nones({'target_length': target_length})
+    params = {**config['params'], **override_params}
 
     model = Enformer(**config['params'])
     model.load_state_dict(torch.load(str(save_path)))

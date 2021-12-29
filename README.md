@@ -133,6 +133,16 @@ model = load_pretrained_model('preview')
 # do your fine-tuning
 ```
 
+You can also load, with overriding of the `target_length` parameter, if you are working with shorter sequence lengths
+
+```python
+from enformer_pytorch import load_pretrained_model
+
+model = load_pretrained_model('preview', target_length = 128)
+
+# do your fine-tuning
+```
+
 ## Fine-tuning (wip)
 
 This repository will also allow for easy fine-tuning of Enformer.
