@@ -3,7 +3,8 @@ from setuptools import setup, find_packages
 setup(
   name = 'enformer-pytorch',
   packages = find_packages(exclude=[]),
-  version = '0.1.8',
+  include_package_data = True,
+  version = '0.1.9',
   license='MIT',
   description = 'Enformer - Pytorch',
   author = 'Phil Wang',
