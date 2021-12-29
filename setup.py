@@ -3,7 +3,7 @@ from setuptools import setup, find_packages
 setup(
   name = 'enformer-pytorch',
   packages = find_packages(exclude=[]),
-  version = '0.1.7',
+  version = '0.1.8',
   license='MIT',
   description = 'Enformer - Pytorch',
   author = 'Phil Wang',
@@ -16,7 +16,8 @@ setup(
   ],
   install_requires=[
     'einops>=0.3',
-    'torch>=1.6'
+    'torch>=1.6',
+    'pyyaml'
   ],
   classifiers=[
     'Development Status :: 4 - Beta',

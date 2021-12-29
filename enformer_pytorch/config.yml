@@ -1,0 +1,19 @@
+preview:
+    id: 1-5nXoOCcRQxFULV4gac9GikY9j3iO3p3
+    params:
+        dim: 1536
+        depth: 11
+        heads: 8
+        output_heads:
+            human: 5313
+            mouse: 1643
+
+corr_coef_obj:
+    id: 18gMf2gIbU5LV09_2w8yMjEesVzwu4sGz
+    params:
+        dim: 1536
+        depth: 11
+        heads: 8
+        output_heads:
+            human: 5313
+            mouse: 1643

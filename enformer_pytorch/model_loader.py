@@ -1,5 +1,6 @@
 import os
 import torch
+import yaml
 from pathlib import Path
 from enformer_pytorch.enformer_pytorch import Enformer
 
@@ -24,29 +25,10 @@ except ImportError:
 # constants
 
 CACHE_PATH = default(os.getenv('CACHE_PATH'), os.path.expanduser('~/.cache.enformer'))
+CONFIG_PATH = Path(__file__).parents[0] / 'config.yml'
 
-CONFIG = dict(
-    preview = dict(
-        id = '1-5nXoOCcRQxFULV4gac9GikY9j3iO3p3',
-        params = dict(
-            dim = 1536,
-            depth = 11,
-            heads = 8,
-            output_heads = dict(human = 5313, mouse= 1643),
-            target_length = 896
-        )
-    ),
-    corr_coef_obj = dict(
-        id = '18gMf2gIbU5LV09_2w8yMjEesVzwu4sGz',
-        params = dict(
-            dim = 1536,
-            depth = 11,
-            heads = 8,
-            output_heads = dict(human = 5313, mouse= 1643),
-            target_length = 896
-        )
-    )
-)
+with open(str(CONFIG_PATH)) as stream:    
+    CONFIG = yaml.safe_load(stream)
 
 # functions
 
