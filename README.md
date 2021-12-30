@@ -143,6 +143,18 @@ model = load_pretrained_model('preview', target_length = 128)
 # do your fine-tuning
 ```
 
+You can also define the model externally, and then load the pretrained weights by passing it into `load_pretrained_model`
+
+```python
+from enformer_pytorch import Enformer, load_pretrained_model
+
+enformer = Enformer(dim = 1536, depth = 11, target_length = 128)
+
+load_pretrained_model('preview', model = enformer)
+
+# use enformer
+```
+
 ## Fine-tuning (wip)
 
 This repository will also allow for easy fine-tuning of Enformer.

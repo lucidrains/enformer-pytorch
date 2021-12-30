@@ -35,7 +35,8 @@ with open(str(CONFIG_PATH)) as stream:
 def load_pretrained_model(
     slug,
     force = False,
-    target_length = None
+    target_length = None,
+    model = None
 ):
     if slug not in CONFIG:
         print(f'model {slug} not found among available choices: [{", ".join(CONFIG.keys())}]')
@@ -59,7 +60,9 @@ def load_pretrained_model(
     override_params = remove_nones({'target_length': target_length})
     params = {**config['params'], **override_params}
 
-    model = Enformer(**config['params'])
+    if not exists(model):
+        model = Enformer(**config['params'])
+
     model.load_state_dict(torch.load(str(save_path)))
 
     print(f'loaded {slug} successfully')
