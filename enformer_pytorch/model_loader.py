@@ -36,6 +36,7 @@ def load_pretrained_model(
     slug,
     force = False,
     target_length = None,
+    dropout_rate = None,
     model = None
 ):
     if slug not in CONFIG:
@@ -57,7 +58,7 @@ def load_pretrained_model(
 
     # load
 
-    override_params = remove_nones({'target_length': target_length})
+    override_params = remove_nones({'target_length': target_length, 'dropout_rate': dropout_rate})
     params = {**config['params'], **override_params}
 
     if not exists(model):

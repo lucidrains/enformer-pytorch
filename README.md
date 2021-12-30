@@ -138,7 +138,7 @@ You can also load, with overriding of the `target_length` parameter, if you are 
 ```python
 from enformer_pytorch import load_pretrained_model
 
-model = load_pretrained_model('preview', target_length = 128)
+model = load_pretrained_model('preview', target_length = 128, dropout_rate = 0.1)
 
 # do your fine-tuning
 ```
@@ -148,7 +148,7 @@ You can also define the model externally, and then load the pretrained weights b
 ```python
 from enformer_pytorch import Enformer, load_pretrained_model
 
-enformer = Enformer(dim = 1536, depth = 11, target_length = 128)
+enformer = Enformer(dim = 1536, depth = 11, target_length = 128, dropout_rate = 0.1)
 
 load_pretrained_model('preview', model = enformer)
 
