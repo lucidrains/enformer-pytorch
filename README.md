@@ -244,9 +244,12 @@ seq = torch.randint(0, 4, (1, 196_608 // 2,)).cuda()
 target = torch.randn(1, 200, 4).cuda()      # 4 tracks
 context = torch.randn(4, 16, 1024).cuda()   # 4 contexts for the different 'tracks', each with 16 tokens
 
+context_mask = torch.ones(4, 16).bool().cuda() # optional context mask, in example, include all context tokens
+
 loss = model(
     seq,
     context = context,
+    context_mask = context_mask,
     target = target
 )
 

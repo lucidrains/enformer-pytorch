@@ -149,6 +149,7 @@ class ContextAttentionAdapterWrapper(nn.Module):
         seq,
         *,
         context,
+        context_mask = None,
         target = None,
         freeze_enformer = False
     ):
@@ -182,6 +183,13 @@ class ContextAttentionAdapterWrapper(nn.Module):
 
         q, k, v = map(lambda t: rearrange(t, 'b n (h d) -> b h n d', h = h), (q, k, v))
         sim = einsum('b h i d, c h j d -> b c h i j', q, k) * self.scale
+
+        # masking
+
+        if exists(context_mask):
+            context_mask = F.pad(context_mask, (1, 0), value = True)
+            context_mask =rearrange(context_mask, 'b j -> b 1 1 1 j')
+            sim = sim.masked_fill(~context_mask, -torch.finfo(sim.dtype).max)
 
         # attention
 
