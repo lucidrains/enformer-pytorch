@@ -155,7 +155,7 @@ load_pretrained_model('preview', model = enformer)
 # use enformer
 ```
 
-## Fine-tuning (wip)
+## Fine-tuning
 
 This repository will also allow for easy fine-tuning of Enformer.
 
