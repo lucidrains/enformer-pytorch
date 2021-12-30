@@ -150,7 +150,7 @@ class ContextAttentionAdapterWrapper(nn.Module):
         self.scale = dim_head ** -0.5
         self.heads = heads
         inner_dim = heads * dim_head
-        self.to_queries = nn.Linear(enformer_hidden_dim, inner_dim)
+        self.to_queries = nn.Linear(enformer_hidden_dim, inner_dim, bias = False)
 
         self.null_key = nn.Parameter(torch.randn(inner_dim))
         self.null_value = nn.Parameter(torch.randn(inner_dim))
