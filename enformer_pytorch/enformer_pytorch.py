@@ -258,9 +258,9 @@ class Enformer(nn.Module):
         heads = 8,
         output_heads = dict(human = 5313, mouse= 1643),
         target_length = TARGET_LENGTH,
-        dropout_rate = 0.4,
         num_alphabet = 4,
         attn_dim_key = 64,
+        dropout_rate = 0.4,
         attn_dropout = 0.05,
         pos_dropout = 0.01
     ):
@@ -358,6 +358,10 @@ class Enformer(nn.Module):
             nn.Linear(twice_dim, features),
             nn.Softplus()
         ), output_heads))
+
+    def set_target_length(self, target_length):
+        crop_module = self._trunk[-2]
+        crop_module.target_length = target_length
 
     @property
     def trunk(self):

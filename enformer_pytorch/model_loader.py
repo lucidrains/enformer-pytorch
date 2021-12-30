@@ -35,9 +35,8 @@ with open(str(CONFIG_PATH)) as stream:
 def load_pretrained_model(
     slug,
     force = False,
-    target_length = None,
-    dropout_rate = None,
-    model = None
+    model = None,
+    **kwargs
 ):
     if slug not in CONFIG:
         print(f'model {slug} not found among available choices: [{", ".join(CONFIG.keys())}]')
@@ -58,7 +57,7 @@ def load_pretrained_model(
 
     # load
 
-    override_params = remove_nones({'target_length': target_length, 'dropout_rate': dropout_rate})
+    override_params = remove_nones(kwargs)
     params = {**config['params'], **override_params}
 
     if not exists(model):
