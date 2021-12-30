@@ -152,6 +152,16 @@ class ContextAttentionAdapterWrapper(nn.Module):
         target = None,
         freeze_enformer = False
     ):
+        """
+        b - batch
+        n - sequence length
+        c - number of contexts (tracks)
+        d - dimension
+        i - sequence length (query embeddings)
+        j - sequence length (keys / values contexts)
+        h - attention heads
+        """
+
         h = self.heads
         embeddings = get_enformer_embeddings(self.enformer, seq, freeze = freeze_enformer)
 
