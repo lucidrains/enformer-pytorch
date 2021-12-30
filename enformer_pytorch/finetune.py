@@ -14,7 +14,6 @@ def null_context():
 
 def freeze_batchnorms(model):
     bns = [m for m in model.modules() if isinstance(m, nn.BatchNorm1d)]
-    bn_orig_state = [dict(track_running_stats = bn.track_running_stats, training = bn.training, requires_grad = [p.requires_grad for p in bn.parameters()]) for bn in bns]
 
     for bn in bns:
         bn.eval()
