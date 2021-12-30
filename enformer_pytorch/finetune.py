@@ -122,20 +122,25 @@ class ContextAttentionAdapterWrapper(nn.Module):
         super().__init__()
         assert isinstance(enformer, Enformer)
         self.enformer = enformer
+        enformer_hidden_dim = enformer.dim * 2
+
+        self.query_norm = nn.LayerNorm(enformer_hidden_dim)
+        self.key_values_norm = nn.LayerNorm(context_dim)
 
         self.scale = dim_head ** -0.5
         self.heads = heads
         inner_dim = heads * dim_head
-        self.to_queries = nn.Linear(enformer.dim * 2, inner_dim)
+        self.to_queries = nn.Linear(enformer_hidden_dim, inner_dim)
 
         self.null_key = nn.Parameter(torch.randn(inner_dim))
         self.null_value = nn.Parameter(torch.randn(inner_dim))
 
         self.to_key_values = nn.Linear(context_dim, inner_dim * 2, bias = False)
+        self.to_out = nn.Linear(inner_dim, enformer_hidden_dim)
 
-        self.to_out  = nn.Sequential(
-            nn.Linear(inner_dim, 1),
-            Rearrange('c ... 1 -> ... c'),
+        self.to_pred  = nn.Sequential(
+            nn.Linear(enformer_hidden_dim, 1),
+            Rearrange('b c ... 1 -> b ... c'),
             nn.Softplus()
         )
 
@@ -155,8 +160,8 @@ class ContextAttentionAdapterWrapper(nn.Module):
         if context.ndim == 2:
             context = rearrange(context, 'b d -> b 1 d')
 
-        q = self.to_queries(embeddings)
-        k, v = self.to_key_values(context).chunk(2, dim = -1)
+        q = self.to_queries(self.query_norm(embeddings))
+        k, v = self.to_key_values(self.key_values_norm(context)).chunk(2, dim = -1)
 
         null_k, null_v = map(lambda t: repeat(t, 'd -> b 1 d', b = context.shape[0]), (self.null_key, self.null_value))
 
@@ -174,13 +179,21 @@ class ContextAttentionAdapterWrapper(nn.Module):
 
         # aggregate
 
-        out = einsum('b c h i j, c h j d -> c h i d', attn, v)
+        out = einsum('b c h i j, c h j d -> b c h i d', attn, v)
 
-        out = rearrange(out, 'c h n d -> c n (h d)', h = h)
+        out = rearrange(out, 'b c h n d -> b c n (h d)', h = h)
 
-        # combine heads and project / softplus
+        # combine heads
 
-        pred = self.to_out(out)
+        branch_out = self.to_out(out)
+
+        # residual
+
+        embeddings = embeddings + branch_out
+
+        # to prediction
+
+        pred = self.to_pred(embeddings)
 
         if not exists(target):
             return pred
