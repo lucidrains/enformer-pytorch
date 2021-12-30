@@ -9,7 +9,10 @@ def exists(val):
     return val is not None
 
 @contextmanager
-def freeze_batchnorm_context(model):
+def null_context():
+    yield
+
+def freeze_batchnorms(model):
     bns = [m for m in model.modules() if isinstance(m, nn.BatchNorm1d)]
     bn_orig_state = [dict(track_running_stats = bn.track_running_stats, training = bn.training, requires_grad = [p.requires_grad for p in bn.parameters()]) for bn in bns]
 
@@ -17,15 +20,6 @@ def freeze_batchnorm_context(model):
         bn.eval()
         bn.requires_grad = False
         bn.track_running_stats = False
-
-    yield
-
-    for bn, state in zip(bns, bn_orig_state):
-        bn.train(state['training'])
-        bn.track_running_stats = state['track_running_stats']
-
-        for p, requires_grad in zip(bn.parameters(), state['requires_grad']):
-            p.requires_grad = requires_grad
 
 class HeadAdapterWrapper(nn.Module):
     def __init__(
@@ -50,7 +44,8 @@ class HeadAdapterWrapper(nn.Module):
         target = None,
         freeze_enformer = False
     ):
-        enformer_context = freeze_batchnorm_context(self.enformer) if not freeze_enformer else torch.no_grad()
+        freeze_batchnorms(self.enformer)
+        enformer_context = null_context() if not freeze_enformer else torch.no_grad()
 
         with enformer_context:
             embeddings = self.enformer(seq, return_only_embeddings = True)
@@ -87,7 +82,8 @@ class ContextAdapterWrapper(nn.Module):
         target = None,
         freeze_enformer = False
     ):
-        enformer_context = freeze_batchnorm_context(self.enformer) if not freeze_enformer else torch.no_grad()
+        freeze_batchnorms(self.enformer)
+        enformer_context = null_context() if not freeze_enformer else torch.no_grad
 
         with enformer_context:
             embeddings = self.enformer(seq, return_only_embeddings = True)
