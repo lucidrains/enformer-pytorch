@@ -218,6 +218,41 @@ loss = model(
 loss.backward()
 ```
 
+Finally, there is also a way to use attention aggregation from a set of context embeddings (or a single context embedding). Simply use the `ContextAttentionAdapterWrapper`
+
+```python
+import torch
+from enformer_pytorch import Enformer
+from enformer_pytorch.finetune import ContextAttentionAdapterWrapper
+
+enformer = Enformer(
+    dim = 1536,
+    depth = 1,
+    heads = 8,
+    target_length = 200,
+)
+
+model = ContextAttentionAdapterWrapper(
+    enformer = enformer,
+    context_dim = 1024,
+    heads = 8,              # number of heads in the cross attention
+    dim_head = 64           # dimension per head
+).cuda()
+
+seq = torch.randint(0, 4, (1, 196_608 // 2,)).cuda()
+
+target = torch.randn(1, 200, 4).cuda()      # 4 tracks
+context = torch.randn(4, 16, 1024).cuda()   # 4 contexts for the different 'tracks', each with 16 tokens
+
+loss = model(
+    seq,
+    context = context,
+    target = target
+)
+
+loss.backward()
+```
+
 ## Appreciation
 
 Special thanks goes out to <a href="https://www.eleuther.ai/">EleutherAI</a> for providing the resources to retrain the model in an acceptable amount of time
