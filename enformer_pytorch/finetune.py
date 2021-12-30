@@ -20,6 +20,20 @@ def freeze_batchnorms(model):
         bn.requires_grad = False
         bn.track_running_stats = False
 
+def get_enformer_embeddings(model, seq, freeze = False):
+    freeze_batchnorms(model)
+    enformer_context = null_context() if not freeze else torch.no_grad
+
+    with enformer_context:
+        embeddings = model(seq, return_only_embeddings = True)
+
+        if freeze:
+            embeddings.detach_()
+
+    return embeddings
+
+# fine-tune wrapper classes
+
 class HeadAdapterWrapper(nn.Module):
     def __init__(
         self,
@@ -43,15 +57,7 @@ class HeadAdapterWrapper(nn.Module):
         target = None,
         freeze_enformer = False
     ):
-        freeze_batchnorms(self.enformer)
-        enformer_context = null_context() if not freeze_enformer else torch.no_grad()
-
-        with enformer_context:
-            embeddings = self.enformer(seq, return_only_embeddings = True)
-
-            if freeze_enformer:
-                embeddings.detach_()
-
+        embeddings = get_enformer_embeddings(self.enformer, seq, freeze = freeze_enformer)
         preds = self.to_tracks(embeddings)
 
         if not exists(target):
@@ -81,14 +87,7 @@ class ContextAdapterWrapper(nn.Module):
         target = None,
         freeze_enformer = False
     ):
-        freeze_batchnorms(self.enformer)
-        enformer_context = null_context() if not freeze_enformer else torch.no_grad
-
-        with enformer_context:
-            embeddings = self.enformer(seq, return_only_embeddings = True)
-
-            if freeze_enformer:
-                embeddings.detach_()
+        embeddings = get_enformer_embeddings(self.enformer, seq, freeze = freeze_enformer)
 
         weights = einsum('t d, d e -> t e', context, self.to_context_weights)
         bias = einsum('t d, d -> t', context, self.to_context_bias)
