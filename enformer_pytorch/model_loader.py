@@ -62,6 +62,8 @@ def load_pretrained_model(
 
     if not exists(model):
         model = Enformer(**config['params'])
+    else:
+        assert len(kwargs) == 0, 'you are trying to override enformer parameters, but you are already passing a reference to an instantiated enformer model'
 
     model.load_state_dict(torch.load(str(save_path)))
 

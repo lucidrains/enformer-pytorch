@@ -155,6 +155,16 @@ load_pretrained_model('preview', model = enformer)
 # use enformer
 ```
 
+To save on memory during fine-tuning a large Enformer model
+
+```python
+from enformer_pytorch import Enformer, load_pretrained_model
+
+enformer = load_pretrained_model('preview', use_checkpointing = True)
+
+# finetune enformer on a limited budget
+```
+
 ## Fine-tuning
 
 This repository will also allow for easy fine-tuning of Enformer.
