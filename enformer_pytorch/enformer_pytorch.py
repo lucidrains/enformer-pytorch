@@ -1,6 +1,7 @@
 import math
 import torch
 from torch import nn, einsum
+from torch.utils.checkpoint import checkpoint_sequential
 from einops import rearrange, reduce
 from einops.layers.torch import Rearrange
 
@@ -262,7 +263,8 @@ class Enformer(nn.Module):
         attn_dim_key = 64,
         dropout_rate = 0.4,
         attn_dropout = 0.05,
-        pos_dropout = 0.01
+        pos_dropout = 0.01,
+        use_checkpointing = False
     ):
         super().__init__()
         self.dim = dim
@@ -359,6 +361,10 @@ class Enformer(nn.Module):
             nn.Softplus()
         ), output_heads))
 
+        # use checkpointing on transformer trunk
+
+        self.use_checkpointing = use_checkpointing
+
     def set_target_length(self, target_length):
         crop_module = self._trunk[-2]
         crop_module.target_length = target_length
@@ -370,7 +376,20 @@ class Enformer(nn.Module):
     @property
     def heads(self):
         return self._heads
-    
+
+    def trunk_checkpointed(self, x):
+        x = self.stem(x)
+        x = self.conv_tower(x)
+        x = self.transformer[0](x)
+
+        # todo (move the rearrange out of self.transformers sequential module, and transfer all weights to new module rearrangement, directly checkpoint on self.transformers)
+        transformer_blocks = self.transformer[1:]
+        x = checkpoint_sequential(nn.Sequential(*transformer_blocks), len(transformer_blocks), x)
+
+        x = self.crop_final(x)
+        x = self.final_pointwise(x)
+        return x
+
     def forward(
         self,
         x,
@@ -390,7 +409,8 @@ class Enformer(nn.Module):
         if no_batch:
             x = rearrange(x, '... -> () ...')
 
-        x = self._trunk(x)
+        trunk_fn = self.trunk_checkpointed if self.use_checkpointing else self._trunk
+        x = trunk_fn(x)
 
         if no_batch:
             x = rearrange(x, '() ... -> ...')
