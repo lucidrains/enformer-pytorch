@@ -36,6 +36,7 @@ def load_pretrained_model(
     slug,
     force = False,
     model = None,
+    verbose = True,
     **kwargs
 ):
     if slug not in CONFIG:
@@ -67,5 +68,8 @@ def load_pretrained_model(
 
     model.load_state_dict(torch.load(str(save_path)))
 
-    print(f'loaded {slug} successfully')
+    if verbose and 'description' in config:
+        print(f"\n{config['description']}\n")
+
+    print(f'Enformer model "{slug}" loaded successfully')
     return model

@@ -1,5 +1,7 @@
 preview:
     id: 1-5nXoOCcRQxFULV4gac9GikY9j3iO3p3
+    description: >
+        Trained on sequences of 131,072 basepairs, target length 896 on v3-64 TPUs for 2 and a half days without augmentations and poisson loss
     params:
         dim: 1536
         depth: 11
@@ -10,6 +12,8 @@ preview:
 
 corr_coef_obj:
     id: 18gMf2gIbU5LV09_2w8yMjEesVzwu4sGz
+    description: >
+        Trained on sequences o 131,072 baespairs, target length 896 on v3-64 TPUs for 3 days with sequence augmentations and pearson correlation objective
     params:
         dim: 1536
         depth: 11
