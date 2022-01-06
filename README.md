@@ -279,6 +279,7 @@ Special thanks goes out to <a href="https://www.eleuther.ai/">EleutherAI</a> for
 - [x] build context manager for fine-tuning with unfrozen enformer but with frozen batchnorm
 - [x] allow for plain fine-tune with fixed static context
 - [x] allow for fine tuning with only unfrozen layernorms (technique from fine tuning transformers)
+- [ ] fix handling of 'N' in sequence, figure out representation of N in basenji barnyard
 - [ ] add to EleutherAI huggingface
 
 ## Citations
