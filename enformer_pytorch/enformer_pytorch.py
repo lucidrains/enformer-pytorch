@@ -413,6 +413,9 @@ class Enformer(nn.Module):
         return_only_embeddings = False,
         head = None
     ):
+        if isinstance(x, list):
+            x = str_to_seq_indices(x)
+
         dtype = x.dtype
 
         if x.dtype == torch.long:

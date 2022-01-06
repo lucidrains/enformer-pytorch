@@ -24,7 +24,7 @@ model = Enformer(
     target_length = 896,
 )
 
-seq = torch.randint(0, 5, (1, 196_608)) # for ACGTN, in that order
+seq = torch.randint(0, 5, (1, 196_608)) # for ACGTN, in that order (-1 for padding)
 output = model(seq)
 
 output['human'] # (1, 896, 5313)
