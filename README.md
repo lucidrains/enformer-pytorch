@@ -24,7 +24,7 @@ model = Enformer(
     target_length = 896,
 )
 
-seq = torch.randint(0, 4, (1, 196_608)) # for ACGT, in that order
+seq = torch.randint(0, 5, (1, 196_608)) # for ACGTN, in that order
 output = model(seq)
 
 output['human'] # (1, 896, 5313)
@@ -36,7 +36,7 @@ You can also directly pass in the sequence as one-hot encodings, which must be f
 ```python
 import torch
 import torch.nn.functional as F
-from enformer_pytorch import Enformer
+from enformer_pytorch import Enformer, seq_indices_to_one_hot
 
 model = Enformer(
     dim = 1536,
@@ -46,8 +46,8 @@ model = Enformer(
     target_length = 896,
 )
 
-seq = torch.randint(0, 4, (1, 196_608))
-one_hot = F.one_hot(seq, num_classes = 4).float()
+seq = torch.randint(0, 5, (1, 196_608))
+one_hot = seq_indices_to_one_hot(seq)
 
 output = model(one_hot)
 
@@ -60,7 +60,7 @@ Finally, one can fetch the embeddings, for fine-tuning and otherwise, by setting
 ```python
 import torch
 import torch.nn.functional as F
-from enformer_pytorch import Enformer
+from enformer_pytorch import Enformer, seq_indices_to_one_hot
 
 model = Enformer(
     dim = 1536,
@@ -70,8 +70,8 @@ model = Enformer(
     target_length = 896,
 )
 
-seq = torch.randint(0, 4, (1, 196_608))
-one_hot = F.one_hot(seq, num_classes = 4).float()
+seq = torch.randint(0, 5, (1, 196_608))
+one_hot = seq_indices_to_one_hot(seq)
 
 output, embeddings = model(one_hot, return_embeddings = True)
 
@@ -82,7 +82,7 @@ For training, you can directly pass the head and target in to get the poisson lo
 
 ```python
 import torch
-from enformer_pytorch import Enformer
+from enformer_pytorch import Enformer, seq_indices_to_one_hot
 
 model = Enformer(
     dim = 1536,
@@ -92,7 +92,7 @@ model = Enformer(
     target_length = 200,
 ).cuda()
 
-seq = torch.randint(0, 4, (196_608 // 2,)).cuda()
+seq = torch.randint(0, 5, (196_608 // 2,)).cuda()
 target = torch.randn(200, 5313).cuda()
 
 loss = model(
@@ -188,7 +188,7 @@ model = HeadAdapterWrapper(
     num_tracks = 128
 ).cuda()
 
-seq = torch.randint(0, 4, (1, 196_608 // 2,)).cuda()
+seq = torch.randint(0, 5, (1, 196_608 // 2,)).cuda()
 target = torch.randn(1, 200, 128).cuda()  # 128 tracks
 
 loss = model(seq, target = target)
@@ -214,7 +214,7 @@ model = ContextAdapterWrapper(
     context_dim = 1024
 ).cuda()
 
-seq = torch.randint(0, 4, (1, 196_608 // 2,)).cuda()
+seq = torch.randint(0, 5, (1, 196_608 // 2,)).cuda()
 
 target = torch.randn(1, 200, 4).cuda()  # 4 tracks
 context = torch.randn(4, 1024).cuda()   # 4 contexts for the different 'tracks'
@@ -249,7 +249,7 @@ model = ContextAttentionAdapterWrapper(
     dim_head = 64           # dimension per head
 ).cuda()
 
-seq = torch.randint(0, 4, (1, 196_608 // 2,)).cuda()
+seq = torch.randint(0, 5, (1, 196_608 // 2,)).cuda()
 
 target = torch.randn(1, 200, 4).cuda()      # 4 tracks
 context = torch.randn(4, 16, 1024).cuda()   # 4 contexts for the different 'tracks', each with 16 tokens

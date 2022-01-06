@@ -33,6 +33,13 @@ def exponential_linspace_int(start, end, num, divisible_by = 1):
 def log(t, eps = 1e-20):
     return torch.log(t.clamp(min = eps))
 
+def seq_indices_to_one_hot(t):
+    wildcard = t == 4 # the Ns in the sequence
+    t = t.clamp(max = 3)
+    one_hot = F.one_hot(t, num_classes = 4)
+    one_hot = one_hot.masked_fill(wildcard[..., None], 0.)
+    return one_hot.float()
+
 # losses and metrics
 
 def poisson_loss(pred, target):
@@ -259,7 +266,6 @@ class Enformer(nn.Module):
         heads = 8,
         output_heads = dict(human = 5313, mouse= 1643),
         target_length = TARGET_LENGTH,
-        num_alphabet = 4,
         attn_dim_key = 64,
         dropout_rate = 0.4,
         attn_dropout = 0.05,
@@ -268,7 +274,6 @@ class Enformer(nn.Module):
     ):
         super().__init__()
         self.dim = dim
-        self.num_alphabet = num_alphabet
         half_dim = dim // 2
         twice_dim = dim * 2
 
@@ -276,7 +281,7 @@ class Enformer(nn.Module):
 
         self.stem = nn.Sequential(
             Rearrange('b n d -> b d n'),
-            nn.Conv1d(num_alphabet, half_dim, 15, padding = 7),
+            nn.Conv1d(4, half_dim, 15, padding = 7),
             Residual(ConvBlock(half_dim)),
             AttentionPool(half_dim, pool_size = 2)
         )
@@ -402,7 +407,7 @@ class Enformer(nn.Module):
         dtype = x.dtype
 
         if x.dtype == torch.long:
-            x = F.one_hot(x, num_classes = self.num_alphabet).float()
+            x = seq_indices_to_one_hot(x)
 
         no_batch = x.ndim == 2
 
