@@ -38,6 +38,7 @@ class GenomeIntervalDataset(Dataset):
         bed_file,
         fasta_file,
         context_length = None,
+        shift_augmentation_range = None,
         filter_df_fn = identity
     ):
         super().__init__()
@@ -53,6 +54,7 @@ class GenomeIntervalDataset(Dataset):
         self.df = df
         self.seqs = Fasta(str(fasta_file))
         self.context_length = context_length
+        self.shift_augmentation = shift_augmentation
 
     def __len__(self):
         return len(self.df)
