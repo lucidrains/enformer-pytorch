@@ -273,9 +273,10 @@ import torch
 from enformer_pytorch import Enformer, GenomeIntervalDataset
 
 ds = GenomeIntervalDataset(
-    bed_file = './sequences.bed',  # bed file
-    fasta_file = './hg38.fa',      # path to fasta file
-    context_length = 196_608
+    bed_file = './sequences.bed',                       # bed file
+    fasta_file = './hg38.ml.fa',                        # path to fasta file
+    filter_df_fn = lambda df: df[df.type == 'train'],   # filter dataframe function
+    context_length = 196_608,
     # this can be longer than the interval designated in the .bed file,
     # in which case it will take care of lengthening the interval on either sides
     # as well as proper padding if at the end of the chromosomes
