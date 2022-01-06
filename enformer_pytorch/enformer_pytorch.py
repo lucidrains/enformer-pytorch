@@ -35,15 +35,19 @@ def log(t, eps = 1e-20):
 
 # sequence helpers
 
-def str_to_seq_indices(seq_strs):
-    char_to_index_map = dict(a = 0, c = 1, g = 2, t = 3, n = 4)
+def str_to_seq_indices(seq_strs, padding = '.'):
+    char_to_index_map = {'a': 0, 'c': 1, 'g': 2, 't': 3, 'n': 4, padding: -1}
     seq_strs = map(lambda x: x.lower(), seq_strs)
     seq_indices = list(map(lambda seq_str: torch.Tensor(list(map(lambda char: char_to_index_map[char], seq_str))), seq_strs))
     return torch.stack(seq_indices).long()
 
-def seq_indices_to_one_hot(t):
+def seq_indices_to_one_hot(t, padding = '.'):
+    is_padding = t == -1
+    t = t.clamp(min = 0)
     one_hot = F.one_hot(t, num_classes = 5)
-    return one_hot[..., :4].float()
+    out = one_hot[..., :4].float()
+    out = out.masked_fill(is_padding[..., None], 0.25)
+    return out
 
 # losses and metrics
 
