@@ -276,6 +276,7 @@ ds = GenomeIntervalDataset(
     bed_file = './sequences.bed',                       # bed file
     fasta_file = './hg38.ml.fa',                        # path to fasta file
     filter_df_fn = lambda df: df[df.type == 'train'],   # filter dataframe function
+    return_seq_indices = True,                          # return nucleotide indices (ACGTN) or one hot encodings
     context_length = 196_608,
     # this can be longer than the interval designated in the .bed file,
     # in which case it will take care of lengthening the interval on either sides
@@ -290,7 +291,8 @@ model = Enformer(
     target_length = 896,
 )
 
-pred = model(ds[0], head = 'human') # (896, 5313)
+seq = ds[0] # (196608,)
+pred = model(seq, head = 'human') # (896, 5313)
 ```
 
 ## Appreciation
