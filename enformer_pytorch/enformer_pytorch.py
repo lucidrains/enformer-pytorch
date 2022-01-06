@@ -7,6 +7,8 @@ from torch.utils.checkpoint import checkpoint_sequential
 from einops import rearrange, reduce
 from einops.layers.torch import Rearrange
 
+from enformer_pytorch.data import str_to_seq_indices, seq_indices_to_one_hot
+
 # constants
 
 SEQUENCE_LENGTH = 196_608
@@ -32,22 +34,6 @@ def exponential_linspace_int(start, end, num, divisible_by = 1):
 
 def log(t, eps = 1e-20):
     return torch.log(t.clamp(min = eps))
-
-# sequence helpers
-
-def str_to_seq_indices(seq_strs, padding = '.'):
-    char_to_index_map = {'a': 0, 'c': 1, 'g': 2, 't': 3, 'n': 4, padding: -1}
-    seq_strs = map(lambda x: x.lower(), seq_strs)
-    seq_indices = list(map(lambda seq_str: torch.Tensor(list(map(lambda char: char_to_index_map[char], seq_str))), seq_strs))
-    return torch.stack(seq_indices).long()
-
-def seq_indices_to_one_hot(t, padding = -1):
-    is_padding = t == padding
-    t = t.clamp(min = 0)
-    one_hot = F.one_hot(t, num_classes = 5)
-    out = one_hot[..., :4].float()
-    out = out.masked_fill(is_padding[..., None], 0.25)
-    return out
 
 # losses and metrics
 

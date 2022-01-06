@@ -35,7 +35,6 @@ You can also directly pass in the sequence as one-hot encodings, which must be f
 
 ```python
 import torch
-import torch.nn.functional as F
 from enformer_pytorch import Enformer, seq_indices_to_one_hot
 
 model = Enformer(
@@ -59,7 +58,6 @@ Finally, one can fetch the embeddings, for fine-tuning and otherwise, by setting
 
 ```python
 import torch
-import torch.nn.functional as F
 from enformer_pytorch import Enformer, seq_indices_to_one_hot
 
 model = Enformer(
@@ -264,6 +262,34 @@ loss = model(
 )
 
 loss.backward()
+```
+
+## Data
+
+You can use the `GenomicIntervalDataset` to easily fetch sequences of any length from a `.bed` file, with greater context length dynamically computed if specified
+
+```python
+import torch
+from enformer_pytorch import Enformer, GenomeIntervalDataset
+
+ds = GenomeIntervalDataset(
+    bed_file = './sequences.bed',  # bed file
+    fasta_file = './hg38.fa',      # path to fasta file
+    context_length = 196_608
+    # this can be longer than the interval designated in the .bed file,
+    # in which case it will take care of lengthening the interval on either sides
+    # as well as proper padding if at the end of the chromosomes
+)
+
+model = Enformer(
+    dim = 1536,
+    depth = 11,
+    heads = 8,
+    output_heads = dict(human = 5313, mouse = 1643),
+    target_length = 896,
+)
+
+pred = model(ds[0], head = 'human') # (896, 5313)
 ```
 
 ## Appreciation
