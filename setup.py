@@ -4,7 +4,7 @@ setup(
   name = 'enformer-pytorch',
   packages = find_packages(exclude=[]),
   include_package_data = True,
-  version = '0.2.1',
+  version = '0.2.2',
   license='MIT',
   description = 'Enformer - Pytorch',
   author = 'Phil Wang',

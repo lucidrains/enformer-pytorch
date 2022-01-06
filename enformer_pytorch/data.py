@@ -28,6 +28,7 @@ def seq_indices_to_one_hot(t, padding = -1):
 # processing bed files
 
 import pandas as pd
+from random import randrange
 from pathlib import Path
 from pyfaidx import Fasta
 from torch.utils.data import Dataset
@@ -39,7 +40,8 @@ class GenomeIntervalDataset(Dataset):
         fasta_file,
         context_length = None,
         return_seq_indices = False,
-        filter_df_fn = identity
+        filter_df_fn = identity,
+        shift_augs = None
     ):
         super().__init__()
         bed_path = Path(bed_file)
@@ -56,6 +58,11 @@ class GenomeIntervalDataset(Dataset):
         self.context_length = context_length
         self.return_seq_indices = return_seq_indices
 
+        if exists(shift_augs):
+            assert len(shift_augs) == 2, 'shift augs needs to be a tuple of 2, indicating min and max relative shifts inclusive - ex. (-2, 2) for [-2, -1, 0, 1, 2]'
+
+        self.shift_augs = shift_augs
+
     def __len__(self):
         return len(self.df)
 
@@ -66,6 +73,14 @@ class GenomeIntervalDataset(Dataset):
 
         chromosome = self.seqs[chr_name]
         chromosome_length = len(chromosome)
+
+        if exists(self.shift_augs):
+            min_shift, max_shift = self.shift_augs
+            min_shift = max(start + min_shift, 0) - start
+            max_shift = min(end + max_shift, chromosome_length) - end
+            rand_shift = randrange(min_shift, max_shift + 1)
+            start += rand_shift
+            end += rand_shift
 
         left_padding = right_padding = 0
 
