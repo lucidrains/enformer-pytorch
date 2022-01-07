@@ -50,7 +50,7 @@ class GenomeIntervalDataset(Dataset):
         assert bed_path.exists(), 'path to .bed file must exist'
         assert fasta_file.exists(), 'path to fasta file must exist'
 
-        df = pd.read_csv(str(bed_path), sep = '\t', header = None, names = ['chr', 'start', 'end', 'type'])
+        df = pd.read_csv(str(bed_path), sep = '\t', header = None)
         df = filter_df_fn(df)
 
         self.df = df
@@ -68,7 +68,7 @@ class GenomeIntervalDataset(Dataset):
 
     def __getitem__(self, ind):
         interval = self.df.iloc[ind]
-        chr_name, start, end = (interval.chr, interval.start, interval.end)
+        chr_name, start, end = (interval[0], interval[1], interval[2])
         interval_length = end - start
 
         chromosome = self.seqs[chr_name]
