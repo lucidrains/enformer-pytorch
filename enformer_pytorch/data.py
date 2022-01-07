@@ -41,7 +41,8 @@ class GenomeIntervalDataset(Dataset):
         context_length = None,
         return_seq_indices = False,
         filter_df_fn = identity,
-        shift_augs = None
+        shift_augs = None,
+        chr_bed_to_fasta_map = dict()
     ):
         super().__init__()
         bed_path = Path(bed_file)
@@ -63,6 +64,10 @@ class GenomeIntervalDataset(Dataset):
 
         self.shift_augs = shift_augs
 
+        # if the chromosome name in the bed file is different than the keyname in the fasta
+        # can remap on the fly
+        self.chr_bed_to_fasta_map = chr_bed_to_fasta_map
+
     def __len__(self):
         return len(self.df)
 
@@ -70,6 +75,8 @@ class GenomeIntervalDataset(Dataset):
         interval = self.df.iloc[ind]
         chr_name, start, end = (interval[0], interval[1], interval[2])
         interval_length = end - start
+
+        chr_name = self.chr_bed_to_fasta_map.get(chr_name, chr_name)
 
         chromosome = self.seqs[chr_name]
         chromosome_length = len(chromosome)

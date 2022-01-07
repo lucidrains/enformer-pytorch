@@ -282,6 +282,12 @@ ds = GenomeIntervalDataset(
     # this can be longer than the interval designated in the .bed file,
     # in which case it will take care of lengthening the interval on either sides
     # as well as proper padding if at the end of the chromosomes
+    chr_bed_to_fasta_map = {
+        'chr1': 'chromosome1',  # if the chromosome name in the .bed file is different than the key name in the fasta file, you can rename them on the fly
+        'chr2': 'chromosome2',
+        'chr3': 'chromosome3',
+        # etc etc
+    }
 )
 
 model = Enformer(
