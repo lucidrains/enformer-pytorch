@@ -115,6 +115,8 @@ corr_coef # pearson R, used as a metric in the paper
 
 ## Pretrained Model
 
+Warning: the pretrained models so far have not hit the mark of what was presented in the paper. if you would like to help out, please join <a href="https://discord.com/invite/s7WyNU24aM">this discord</a>. replication efforts ongoing
+
 To use a pretrained model (may not be of the same quality as the one in the paper yet), first install `gdown`
 
 ```bash
