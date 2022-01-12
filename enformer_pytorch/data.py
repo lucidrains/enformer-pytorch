@@ -83,8 +83,11 @@ class GenomeIntervalDataset(Dataset):
 
         if exists(self.shift_augs):
             min_shift, max_shift = self.shift_augs
+            max_shift += 1
+
             min_shift = max(start + min_shift, 0) - start
             max_shift = min(end + max_shift, chromosome_length) - end
+
             rand_shift = randrange(min_shift, max_shift + 1)
             start += rand_shift
             end += rand_shift
