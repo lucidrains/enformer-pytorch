@@ -322,6 +322,7 @@ Special thanks goes out to <a href="https://www.eleuther.ai/">EleutherAI</a> for
 - [x] allow for fine tuning with only unfrozen layernorms (technique from fine tuning transformers)
 - [x] fix handling of 'N' in sequence, figure out representation of N in basenji barnyard
 - [x] take care of shift augmentation in `GenomicIntervalDataset`
+- [ ] speed up `str_to_seq_indices` using https://github.com/lucidrains/enformer-tensorflow-sonnet-training-script/blob/main/sequence.py#L12-L27
 - [ ] offer some basic training utils, as gradient accumulation will be needed for fine tuning
 - [ ] add to EleutherAI huggingface
 
