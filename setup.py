@@ -4,7 +4,7 @@ setup(
   name = 'enformer-pytorch',
   packages = find_packages(exclude=[]),
   include_package_data = True,
-  version = '0.2.6',
+  version = '0.2.7',
   license='MIT',
   description = 'Enformer - Pytorch',
   author = 'Phil Wang',
@@ -18,7 +18,7 @@ setup(
   install_requires=[
     'einops>=0.3',
     'torch>=1.6',
-    'pandas',
+    'polars',
     'pyfaidx',
     'pyyaml'
   ],

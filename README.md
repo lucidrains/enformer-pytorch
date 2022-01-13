@@ -272,12 +272,15 @@ You can use the `GenomicIntervalDataset` to easily fetch sequences of any length
 
 ```python
 import torch
+import polars as pl
 from enformer_pytorch import Enformer, GenomeIntervalDataset
+
+filter_train = lambda df: df.filter(pl.col('column_4') == 'train')
 
 ds = GenomeIntervalDataset(
     bed_file = './sequences.bed',                       # bed file - columns 0, 1, 2 must be <chromosome>, <start position>, <end position>
     fasta_file = './hg38.ml.fa',                        # path to fasta file
-    filter_df_fn = lambda df: df[df[3] == 'train'],     # filter dataframe function
+    filter_df_fn = filter_train,                        # filter dataframe function
     return_seq_indices = True,                          # return nucleotide indices (ACGTN) or one hot encodings
     shift_augs = (-2, 2),                               # random shift augmentations from -2 to +2 basepairs
     context_length = 196_608,

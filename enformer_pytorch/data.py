@@ -27,7 +27,7 @@ def seq_indices_to_one_hot(t, padding = -1):
 
 # processing bed files
 
-import pandas as pd
+import polars as pl
 from random import randrange
 from pathlib import Path
 from pyfaidx import Fasta
@@ -51,7 +51,7 @@ class GenomeIntervalDataset(Dataset):
         assert bed_path.exists(), 'path to .bed file must exist'
         assert fasta_file.exists(), 'path to fasta file must exist'
 
-        df = pd.read_csv(str(bed_path), sep = '\t', header = None)
+        df = pl.read_csv(str(bed_path), sep = '\t', has_headers = False)
         df = filter_df_fn(df)
 
         self.df = df
@@ -72,7 +72,7 @@ class GenomeIntervalDataset(Dataset):
         return len(self.df)
 
     def __getitem__(self, ind):
-        interval = self.df.iloc[ind]
+        interval = self.df.row(ind)
         chr_name, start, end = (interval[0], interval[1], interval[2])
         interval_length = end - start
 
