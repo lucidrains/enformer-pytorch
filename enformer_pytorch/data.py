@@ -72,51 +72,25 @@ def seq_indices_to_one_hot(t, padding = -1):
 
 # processing bed files
 
-class GenomeIntervalDataset(Dataset):
+class FastaInterval():
     def __init__(
         self,
-        bed_file,
+        *,
         fasta_file,
         context_length = None,
         return_seq_indices = False,
-        filter_df_fn = identity,
-        shift_augs = None,
-        chr_bed_to_fasta_map = dict()
+        shift_augs = None
     ):
-        super().__init__()
-        bed_path = Path(bed_file)
         fasta_file = Path(fasta_file)
-
-        assert bed_path.exists(), 'path to .bed file must exist'
         assert fasta_file.exists(), 'path to fasta file must exist'
 
-        df = pl.read_csv(str(bed_path), sep = '\t', has_headers = False)
-        df = filter_df_fn(df)
-
-        self.df = df
         self.seqs = Fasta(str(fasta_file))
-        self.context_length = context_length
         self.return_seq_indices = return_seq_indices
-
-        if exists(shift_augs):
-            assert len(shift_augs) == 2, 'shift augs needs to be a tuple of 2, indicating min and max relative shifts inclusive - ex. (-2, 2) for [-2, -1, 0, 1, 2]'
-
+        self.context_length = context_length
         self.shift_augs = shift_augs
 
-        # if the chromosome name in the bed file is different than the keyname in the fasta
-        # can remap on the fly
-        self.chr_bed_to_fasta_map = chr_bed_to_fasta_map
-
-    def __len__(self):
-        return len(self.df)
-
-    def __getitem__(self, ind):
-        interval = self.df.row(ind)
-        chr_name, start, end = (interval[0], interval[1], interval[2])
+    def __call__(self, chr_name, start, end):
         interval_length = end - start
-
-        chr_name = self.chr_bed_to_fasta_map.get(chr_name, chr_name)
-
         chromosome = self.seqs[chr_name]
         chromosome_length = len(chromosome)
 
@@ -156,3 +130,43 @@ class GenomeIntervalDataset(Dataset):
             return str_to_seq_indices(seq)
 
         return str_to_one_hot(seq)
+
+
+class GenomeIntervalDataset(Dataset):
+    def __init__(
+        self,
+        bed_file,
+        fasta_file,
+        filter_df_fn = identity,
+        chr_bed_to_fasta_map = dict(),
+        context_length = None,
+        return_seq_indices = False,
+        shift_augs = None
+    ):
+        super().__init__()
+        bed_path = Path(bed_file)
+        assert bed_path.exists(), 'path to .bed file must exist'
+
+        df = pl.read_csv(str(bed_path), sep = '\t', has_headers = False)
+        df = filter_df_fn(df)
+        self.df = df
+
+        # if the chromosome name in the bed file is different than the keyname in the fasta
+        # can remap on the fly
+        self.chr_bed_to_fasta_map = chr_bed_to_fasta_map
+
+        self.fasta = FastaInterval(
+            fasta_file = fasta_file,
+            context_length = context_length,
+            return_seq_indices = return_seq_indices,
+            shift_augs = shift_augs
+        )
+
+    def __len__(self):
+        return len(self.df)
+
+    def __getitem__(self, ind):
+        interval = self.df.row(ind)
+        chr_name, start, end = (interval[0], interval[1], interval[2])
+        chr_name = self.chr_bed_to_fasta_map.get(chr_name, chr_name)
+        return self.fasta(chr_name, start, end)
