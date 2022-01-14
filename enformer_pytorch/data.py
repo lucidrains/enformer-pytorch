@@ -48,10 +48,11 @@ one_hot_embed[ord('N')] = torch.Tensor([0., 0., 0., 0.])
 one_hot_embed[ord('.')] = torch.Tensor([0.25, 0.25, 0.25, 0.25])
 
 def torch_fromstring(seq_strs):
+    batched = not isinstance(seq_strs, str)
     seq_strs = cast_list(seq_strs)
     np_seq_chrs = list(map(lambda t: np.fromstring(t, dtype = np.uint8), seq_strs))
     seq_chrs = list(map(torch.from_numpy, np_seq_chrs))
-    return torch.stack(seq_chrs)
+    return torch.stack(seq_chrs) if batched else seq_chrs[0]
 
 def str_to_seq_indices(seq_strs):
     seq_chrs = torch_fromstring(seq_strs)
@@ -152,6 +153,6 @@ class GenomeIntervalDataset(Dataset):
         seq = ('.' * left_padding) + str(chromosome[start:end]) + ('.' * right_padding)
 
         if self.return_seq_indices:
-            return str_to_seq_indices(seq).squeeze(0)
+            return str_to_seq_indices(seq)
 
-        return str_to_one_hot(seq).squeeze(0)
+        return str_to_one_hot(seq)
