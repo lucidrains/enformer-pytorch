@@ -169,6 +169,10 @@ class TargetLengthCrop(nn.Module):
 
     def forward(self, x):
         seq_len, target_len = x.shape[-2], self.target_length
+
+        if target_len == -1:
+            return x
+
         if seq_len < target_len:
             raise ValueError(f'sequence length {seq_len} is less than target length {target_len}')
 
