@@ -1,5 +1,14 @@
 import torch
 import torch.nn.functional as F
+from torch.utils.data import Dataset
+
+import polars as pl
+import numpy as np
+from random import randrange
+from pathlib import Path
+from pyfaidx import Fasta
+
+# helper functions
 
 def exists(val):
     return val is not None
@@ -10,12 +19,47 @@ def identity(t):
 def cast_list(t):
     return t if isinstance(t, list) else [t]
 
-def str_to_seq_indices(seq_strs, padding = '.'):
+# genomic function transforms
+
+seq_indices_embed = torch.zeros(256).long()
+seq_indices_embed[ord('a')] = 0
+seq_indices_embed[ord('c')] = 1
+seq_indices_embed[ord('g')] = 2
+seq_indices_embed[ord('t')] = 3
+seq_indices_embed[ord('n')] = 4
+seq_indices_embed[ord('A')] = 0
+seq_indices_embed[ord('C')] = 1
+seq_indices_embed[ord('G')] = 2
+seq_indices_embed[ord('T')] = 3
+seq_indices_embed[ord('N')] = 4
+seq_indices_embed[ord('.')] = -1
+
+one_hot_embed = torch.zeros(256, 4)
+one_hot_embed[ord('a')] = torch.Tensor([1., 0., 0., 0.])
+one_hot_embed[ord('c')] = torch.Tensor([0., 1., 0., 0.])
+one_hot_embed[ord('g')] = torch.Tensor([0., 0., 1., 0.])
+one_hot_embed[ord('t')] = torch.Tensor([0., 0., 0., 1.])
+one_hot_embed[ord('n')] = torch.Tensor([0., 0., 0., 0.])
+one_hot_embed[ord('A')] = torch.Tensor([1., 0., 0., 0.])
+one_hot_embed[ord('C')] = torch.Tensor([0., 1., 0., 0.])
+one_hot_embed[ord('G')] = torch.Tensor([0., 0., 1., 0.])
+one_hot_embed[ord('T')] = torch.Tensor([0., 0., 0., 1.])
+one_hot_embed[ord('N')] = torch.Tensor([0., 0., 0., 0.])
+one_hot_embed[ord('.')] = torch.Tensor([0.25, 0.25, 0.25, 0.25])
+
+def torch_fromstring(seq_strs):
     seq_strs = cast_list(seq_strs)
-    char_to_index_map = {'a': 0, 'c': 1, 'g': 2, 't': 3, 'n': 4, padding: -1}
-    seq_strs = map(lambda x: x.lower(), seq_strs)
-    seq_indices = list(map(lambda seq_str: torch.Tensor(list(map(lambda char: char_to_index_map[char], seq_str))), seq_strs))
-    return torch.stack(seq_indices).long()
+    np_seq_chrs = list(map(lambda t: np.fromstring(t, dtype = np.uint8), seq_strs))
+    seq_chrs = list(map(torch.from_numpy, np_seq_chrs))
+    return torch.stack(seq_chrs)
+
+def str_to_seq_indices(seq_strs):
+    seq_chrs = torch_fromstring(seq_strs)
+    return seq_indices_embed[seq_chrs.long()]
+
+def str_to_one_hot(seq_strs):
+    seq_chrs = torch_fromstring(seq_strs)
+    return one_hot_embed[seq_chrs.long()]
 
 def seq_indices_to_one_hot(t, padding = -1):
     is_padding = t == padding
@@ -26,12 +70,6 @@ def seq_indices_to_one_hot(t, padding = -1):
     return out
 
 # processing bed files
-
-import polars as pl
-from random import randrange
-from pathlib import Path
-from pyfaidx import Fasta
-from torch.utils.data import Dataset
 
 class GenomeIntervalDataset(Dataset):
     def __init__(
@@ -112,10 +150,8 @@ class GenomeIntervalDataset(Dataset):
                 end = chromosome_length
 
         seq = ('.' * left_padding) + str(chromosome[start:end]) + ('.' * right_padding)
-        seq_indices = str_to_seq_indices(seq)
 
         if self.return_seq_indices:
-            return seq_indices.squeeze(0)
+            return str_to_seq_indices(seq).squeeze(0)
 
-        seq_onehot = seq_indices_to_one_hot(seq_indices)
-        return seq_onehot.squeeze(0)
+        return str_to_one_hot(seq).squeeze(0)

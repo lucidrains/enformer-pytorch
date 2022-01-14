@@ -7,7 +7,7 @@ from torch.utils.checkpoint import checkpoint_sequential
 from einops import rearrange, reduce
 from einops.layers.torch import Rearrange
 
-from enformer_pytorch.data import str_to_seq_indices, seq_indices_to_one_hot
+from enformer_pytorch.data import str_to_one_hot, seq_indices_to_one_hot
 
 # constants
 
@@ -400,11 +400,9 @@ class Enformer(nn.Module):
         head = None
     ):
         if isinstance(x, list):
-            x = str_to_seq_indices(x)
+            x = str_to_one_hot(x)
 
-        dtype = x.dtype
-
-        if x.dtype == torch.long:
+        elif x.dtype == torch.long:
             x = seq_indices_to_one_hot(x)
 
         no_batch = x.ndim == 2
