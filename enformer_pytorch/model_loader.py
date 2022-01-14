@@ -62,7 +62,7 @@ def load_pretrained_model(
     params = {**config['params'], **override_params}
 
     if not exists(model):
-        model = Enformer(**config['params'])
+        model = Enformer(**params)
     else:
         assert len(kwargs) == 0, 'you are trying to override enformer parameters, but you are already passing a reference to an instantiated enformer model'
 
