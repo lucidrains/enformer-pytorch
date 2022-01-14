@@ -70,6 +70,13 @@ def seq_indices_to_one_hot(t, padding = -1):
     out = out.masked_fill(is_padding[..., None], 0.25)
     return out
 
+# augmentations
+
+def one_hot_reverse_complement(one_hot):
+    *_, n, d = one_hot.shape
+    assert d == 4, 'must be one hot encoding with last dimension equal to 4'
+    return torch.flip(one_hot, (-1, -2))
+
 # processing bed files
 
 class FastaInterval():
