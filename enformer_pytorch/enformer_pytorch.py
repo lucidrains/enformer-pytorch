@@ -40,17 +40,10 @@ def log(t, eps = 1e-20):
 def poisson_loss(pred, target):
     return (pred - target * log(pred)).mean()
 
-def pearson_corr_coef(x, y, eps = 1e-8):
-    x2 = x * x
-    y2 = y * y
-    xy = x * y
-    ex = x.mean(dim = 1)
-    ey = y.mean(dim = 1)
-    exy = xy.mean(dim = 1)
-    ex2 = x2.mean(dim = 1)
-    ey2 = y2.mean(dim = 1)
-    r = (exy - ex * ey) / (torch.sqrt(ex2 - (ex * ex)) * torch.sqrt(ey2 - (ey * ey)) + eps)
-    return r.mean(dim = -1)
+def pearson_corr_coef(x, y, dim = 1, reduce_dims = (-1,)):
+    x_centered = x - x.mean(dim = dim, keepdim = True)
+    y_centered = y - y.mean(dim = dim, keepdim = True)
+    return F.cosine_similarity(x_centered, y_centered, dim = dim).mean(dim = reduce_dims)
 
 # relative positional encoding functions
 
