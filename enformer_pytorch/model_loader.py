@@ -15,13 +15,6 @@ def default(val, d):
 def remove_nones(d):
     return dict((k, v) for k, v in d.items() if exists(v))
 
-# make gdown optional dep
-
-try:
-    import gdown
-except ImportError:
-    print('unable to import gdown - please `pip install gdown` before using enformer pretraining models')
-
 # constants
 
 CACHE_PATH = default(os.getenv('CACHE_PATH'), os.path.expanduser('~/.cache.enformer'))
@@ -39,6 +32,11 @@ def load_pretrained_model(
     verbose = True,
     **kwargs
 ):
+    try:
+        import gdown
+    except ImportError:
+        print('unable to import gdown - please `pip install gdown` before using enformer pretraining models')
+
     if slug not in CONFIG:
         print(f'model {slug} not found among available choices: [{", ".join(CONFIG.keys())}]')
         exit()
