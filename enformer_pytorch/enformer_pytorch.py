@@ -179,6 +179,44 @@ def ConvBlock(dim, dim_out = None, kernel_size = 1):
         nn.Conv1d(dim, default(dim_out, dim), kernel_size, padding = kernel_size // 2)
     )
 
+# for replacing the batchnorm resnet blocks with convnext blocks
+
+class LayerNorm(nn.Module):
+    def __init__(self, dim, eps = 1e-5):
+        super().__init__()
+        self.eps = eps
+        self.g = nn.Parameter(torch.ones(1, dim, 1))
+        self.b = nn.Parameter(torch.zeros(1, dim, 1))
+
+    def forward(self, x):
+        var = torch.var(x, dim = 1, unbiased = False, keepdim = True)
+        mean = torch.mean(x, dim = 1, keepdim = True)
+        return (x - mean) / (var + self.eps).sqrt() * self.g + self.b
+
+class ConvNextBlock(nn.Module):
+    def __init__(
+        self,
+        dim,
+        dim_out = None,
+        kernel_size = 7,
+        ff_mult = 2
+    ):
+        super().__init__()
+        dim_out = default(dim_out, dim)
+
+        self.res_conv = nn.Conv1d(dim, dim_out, 1) if dim != dim_out else nn.Identity()
+
+        self.net = nn.Sequential(
+            nn.Conv1d(dim, dim, kernel_size, padding = kernel_size // 2, groups = dim),
+            LayerNorm(dim),
+            nn.Conv1d(dim, dim_out * ff_mult, 1),
+            GELU(),
+            nn.Conv1d(ff_mult * dim_out, dim_out, 1)
+        )
+
+    def forward(self, x):
+        return self.net(x) + self.res_conv(x)
+
 # attention classes
 
 class Attention(nn.Module):
@@ -262,19 +300,22 @@ class Enformer(nn.Module):
         dropout_rate = 0.4,
         attn_dropout = 0.05,
         pos_dropout = 0.01,
-        use_checkpointing = False
+        use_checkpointing = False,
+        use_convnext = False
     ):
         super().__init__()
         self.dim = dim
         half_dim = dim // 2
         twice_dim = dim * 2
 
+        conv_block_klass = ConvNextBlock if use_convnext else ConvBlock
+
         # create stem
 
         self.stem = nn.Sequential(
             Rearrange('b n d -> b d n'),
             nn.Conv1d(4, half_dim, 15, padding = 7),
-            Residual(ConvBlock(half_dim)),
+            Residual(conv_block_klass(half_dim)),
             AttentionPool(half_dim, pool_size = 2)
         )
 
@@ -286,8 +327,8 @@ class Enformer(nn.Module):
         conv_layers = []
         for dim_in, dim_out in zip(filter_list[:-1], filter_list[1:]):
             conv_layers.append(nn.Sequential(
-                ConvBlock(dim_in, dim_out, kernel_size = 5),
-                Residual(ConvBlock(dim_out, dim_out, 1)),
+                conv_block_klass(dim_in, dim_out, kernel_size = 5),
+                Residual(conv_block_klass(dim_out, dim_out, 1)),
                 AttentionPool(dim_out, pool_size = 2)
             ))
 
@@ -335,7 +376,7 @@ class Enformer(nn.Module):
 
         self.final_pointwise = nn.Sequential(
             Rearrange('b n d -> b d n'),
-            ConvBlock(filter_list[-1], twice_dim, 1),
+            conv_block_klass(filter_list[-1], twice_dim, 1),
             Rearrange('b d n -> b n d'),
             nn.Dropout(dropout_rate / 8),
             GELU()
