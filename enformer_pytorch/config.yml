@@ -13,7 +13,31 @@ preview:
 corr_coef_obj:
     id: 18gMf2gIbU5LV09_2w8yMjEesVzwu4sGz
     description: >
-        Trained on sequences o 131,072 baespairs, target length 896 on v3-64 TPUs for 3 days with sequence augmentations and pearson correlation objective
+        Trained on sequences of 131,072 baespairs, target length 896 on v3-64 TPUs for 3 days with sequence augmentations and pearson correlation objective
+    params:
+        dim: 1536
+        depth: 11
+        heads: 8
+        output_heads:
+            human: 5313
+            mouse: 1643
+
+191k:
+    id: 1PRRlGd05CcXgrY10_NB_GMiidUlnvLyQ
+    description: >
+        Trained on sequences of 196,608 basepairs, target length 896, with shift augmentation but without reverse complement, on poisson loss objective. Final human pearson R of ~0.45
+    params:
+        dim: 1536
+        depth: 11
+        heads: 8
+        output_heads:
+            human: 5313
+            mouse: 1643
+
+191k_corr_coef_obj:
+    id: 17eTh9HCZ1EEglkAsA64oTKmD302BY93g
+    description: >
+        Trained on sequences of 196,608 basepairs, target length 896, with shift augmentation but without reverse complement, on poisson loss objective. Final human pearson R of ~0.49
     params:
         dim: 1536
         depth: 11
