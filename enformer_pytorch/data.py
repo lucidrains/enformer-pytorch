@@ -4,7 +4,7 @@ from torch.utils.data import Dataset
 
 import polars as pl
 import numpy as np
-from random import randrange
+from random import randrange, random
 from pathlib import Path
 from pyfaidx import Fasta
 
@@ -18,6 +18,9 @@ def identity(t):
 
 def cast_list(t):
     return t if isinstance(t, list) else [t]
+
+def coin_flip():
+    return random() > 0.5
 
 # genomic function transforms
 
@@ -86,7 +89,8 @@ class FastaInterval():
         fasta_file,
         context_length = None,
         return_seq_indices = False,
-        shift_augs = None
+        shift_augs = None,
+        rc_aug = False
     ):
         fasta_file = Path(fasta_file)
         assert fasta_file.exists(), 'path to fasta file must exist'
@@ -95,6 +99,7 @@ class FastaInterval():
         self.return_seq_indices = return_seq_indices
         self.context_length = context_length
         self.shift_augs = shift_augs
+        self.rc_aug = rc_aug
 
     def __call__(self, chr_name, start, end):
         interval_length = end - start
@@ -134,9 +139,16 @@ class FastaInterval():
         seq = ('.' * left_padding) + str(chromosome[start:end]) + ('.' * right_padding)
 
         if self.return_seq_indices:
+            assert not self.rc_aug, 'reverse complement augmentation not available yet for seq indices'
+
             return str_to_seq_indices(seq)
 
-        return str_to_one_hot(seq)
+        one_hot = str_to_one_hot(seq)
+
+        if self.rc_aug and coin_flip():
+            one_hot = one_hot_reverse_complement(one_hot)
+
+        return one_hot
 
 
 class GenomeIntervalDataset(Dataset):
@@ -148,7 +160,8 @@ class GenomeIntervalDataset(Dataset):
         chr_bed_to_fasta_map = dict(),
         context_length = None,
         return_seq_indices = False,
-        shift_augs = None
+        shift_augs = None,
+        rc_aug = False
     ):
         super().__init__()
         bed_path = Path(bed_file)
@@ -166,7 +179,8 @@ class GenomeIntervalDataset(Dataset):
             fasta_file = fasta_file,
             context_length = context_length,
             return_seq_indices = return_seq_indices,
-            shift_augs = shift_augs
+            shift_augs = shift_augs,
+            rc_aug = rc_aug
         )
 
     def __len__(self):
