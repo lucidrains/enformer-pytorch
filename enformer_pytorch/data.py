@@ -50,6 +50,8 @@ one_hot_embed[ord('T')] = torch.Tensor([0., 0., 0., 1.])
 one_hot_embed[ord('N')] = torch.Tensor([0., 0., 0., 0.])
 one_hot_embed[ord('.')] = torch.Tensor([0.25, 0.25, 0.25, 0.25])
 
+reverse_complement_map = torch.Tensor([3, 2, 1, 0, 4]).long()
+
 def torch_fromstring(seq_strs):
     batched = not isinstance(seq_strs, str)
     seq_strs = cast_list(seq_strs)
@@ -74,6 +76,10 @@ def seq_indices_to_one_hot(t, padding = -1):
     return out
 
 # augmentations
+
+def seq_indices_reverse_complement(seq_indices):
+    complement = reverse_complement_map[seq_indices.long()]
+    return torch.flip(complement, dims = (-1,))
 
 def one_hot_reverse_complement(one_hot):
     *_, n, d = one_hot.shape
@@ -139,7 +145,8 @@ class FastaInterval():
         seq = ('.' * left_padding) + str(chromosome[start:end]) + ('.' * right_padding)
 
         if self.return_seq_indices:
-            assert not self.rc_aug, 'reverse complement augmentation not available yet for seq indices'
+            if self.rc_aug and coin_flip():
+                seq = seq_indices_reverse_complement(seq)
 
             return str_to_seq_indices(seq)
 
