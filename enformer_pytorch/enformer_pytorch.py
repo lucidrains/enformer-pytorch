@@ -301,7 +301,8 @@ class Enformer(nn.Module):
         attn_dropout = 0.05,
         pos_dropout = 0.01,
         use_checkpointing = False,
-        use_convnext = False
+        use_convnext = False,
+        num_downsamples = 7    # genetic sequence is downsampled 2 ** 7 == 128x in default Enformer - can be changed for higher resolution
     ):
         super().__init__()
         self.dim = dim
@@ -321,7 +322,7 @@ class Enformer(nn.Module):
 
         # create conv tower
 
-        filter_list = exponential_linspace_int(half_dim, dim, num = 6, divisible_by = 128)
+        filter_list = exponential_linspace_int(half_dim, dim, num = (num_downsamples - 1), divisible_by = 128)
         filter_list = [half_dim, *filter_list]
 
         conv_layers = []
