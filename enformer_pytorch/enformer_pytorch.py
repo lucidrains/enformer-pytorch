@@ -209,9 +209,9 @@ class ConvNextBlock(nn.Module):
         self.net = nn.Sequential(
             nn.Conv1d(dim, dim, kernel_size, padding = kernel_size // 2, groups = dim),
             LayerNorm(dim),
-            nn.Conv1d(dim, dim_out * ff_mult, 1),
+            nn.Conv1d(dim, dim_out * ff_mult, 3, padding = 1),
             GELU(),
-            nn.Conv1d(ff_mult * dim_out, dim_out, 1)
+            nn.Conv1d(ff_mult * dim_out, dim_out, 3, padding = 1)
         )
 
     def forward(self, x):
@@ -302,7 +302,8 @@ class Enformer(nn.Module):
         pos_dropout = 0.01,
         use_checkpointing = False,
         use_convnext = False,
-        num_downsamples = 7    # genetic sequence is downsampled 2 ** 7 == 128x in default Enformer - can be changed for higher resolution
+        num_downsamples = 7,    # genetic sequence is downsampled 2 ** 7 == 128x in default Enformer - can be changed for higher resolution
+        dim_divisible_by = 128
     ):
         super().__init__()
         self.dim = dim
@@ -322,7 +323,7 @@ class Enformer(nn.Module):
 
         # create conv tower
 
-        filter_list = exponential_linspace_int(half_dim, dim, num = (num_downsamples - 1), divisible_by = 128)
+        filter_list = exponential_linspace_int(half_dim, dim, num = (num_downsamples - 1), divisible_by = dim_divisible_by)
         filter_list = [half_dim, *filter_list]
 
         conv_layers = []
