@@ -14,9 +14,17 @@ def exists(val):
 def null_context():
     yield
 
+# controlling freezing of layers
+
 def set_module_requires_grad_(module, requires_grad):
     for param in module.parameters():
         param.requires_grad = requires_grad
+
+def freeze_all_layers_(module):
+    set_module_requires_grad_(module, False)
+
+def unfreeze_all_layers_(module):
+    set_module_requires_grad_(module, True)
 
 def freeze_batchnorms_(model):
     bns = [m for m in model.modules() if isinstance(m, nn.BatchNorm1d)]
@@ -29,6 +37,24 @@ def freeze_batchnorms_(model):
 def freeze_all_but_layernorms_(model):
     for m in model.modules():
         set_module_requires_grad_(m, isinstance(m, nn.LayerNorm))
+
+def unfreeze_last_n_layers_(enformer, n):
+    assert isinstance(enformer, Enformer)
+    transformer_blocks = enformer.transformer[1:]
+
+    for module in transformer_blocks[-n:]:
+        set_module_requires_grad_(module, True)
+
+def freeze_all_but_last_n_layers_(enformer, n):
+    assert isinstance(enformer, Enformer)
+    freeze_all_layers_(enformer)
+
+    transformer_blocks = enformer.transformer[1:]
+
+    for module in transformer_blocks[-n:]:
+        set_module_requires_grad_(module, False)
+
+# get enformer embeddings
 
 def get_enformer_embeddings(
     model,
