@@ -21,7 +21,8 @@ setup(
     'torch>=1.6',
     'polars',
     'pyfaidx',
-    'pyyaml'
+    'pyyaml',
+    'transformers',
   ],
   classifiers=[
     'Development Status :: 4 - Beta',

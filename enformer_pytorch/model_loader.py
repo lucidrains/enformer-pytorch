@@ -2,7 +2,8 @@ import os
 import torch
 import yaml
 from pathlib import Path
-from enformer_pytorch.enformer_pytorch import Enformer
+from enformer_pytorch.modeling_enformer import Enformer
+from enformer_pytorch.config_enformer import EnformerConfig
 
 # helper functions
 
@@ -59,8 +60,10 @@ def load_pretrained_model(
     override_params = remove_nones(kwargs)
     params = {**config['params'], **override_params}
 
+    model_config = EnformerConfig(**params)
+
     if not exists(model):
-        model = Enformer(**params)
+        model = Enformer(model_config)
     else:
         assert len(kwargs) == 0, 'you are trying to override enformer parameters, but you are already passing a reference to an instantiated enformer model'
 
