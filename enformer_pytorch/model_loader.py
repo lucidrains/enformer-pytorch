@@ -2,8 +2,8 @@ import os
 import torch
 import yaml
 from pathlib import Path
-from enformer_pytorch.modeling_enformer import Enformer
 from enformer_pytorch.config_enformer import EnformerConfig
+from enformer_pytorch.modeling_enformer import Enformer
 
 # helper functions
 
