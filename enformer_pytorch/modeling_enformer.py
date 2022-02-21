@@ -9,6 +9,10 @@ from einops.layers.torch import Rearrange
 
 from enformer_pytorch.data import str_to_one_hot, seq_indices_to_one_hot
 
+from enformer_pytorch.config_enformer import EnformerConfig
+
+from transformers import PreTrainedModel
+
 # constants
 
 SEQUENCE_LENGTH = 196_608
@@ -287,30 +291,16 @@ class Attention(nn.Module):
 
 # main class
 
-class Enformer(nn.Module):
-    def __init__(
-        self,
-        *,
-        dim = 1536,
-        depth = 11,
-        heads = 8,
-        output_heads = dict(human = 5313, mouse= 1643),
-        target_length = TARGET_LENGTH,
-        attn_dim_key = 64,
-        dropout_rate = 0.4,
-        attn_dropout = 0.05,
-        pos_dropout = 0.01,
-        use_checkpointing = False,
-        use_convnext = False,
-        num_downsamples = 7,    # genetic sequence is downsampled 2 ** 7 == 128x in default Enformer - can be changed for higher resolution
-        dim_divisible_by = 128
-    ):
-        super().__init__()
-        self.dim = dim
-        half_dim = dim // 2
-        twice_dim = dim * 2
+class Enformer(PreTrainedModel):
+    config_class = EnformerConfig
 
-        conv_block_klass = ConvNextBlock if use_convnext else ConvBlock
+    def __init__(self, config):
+        super().__init__(config)
+        self.dim = config.dim
+        half_dim = config.dim // 2
+        twice_dim = config.dim * 2
+
+        conv_block_klass = ConvNextBlock if config.use_convnext else ConvBlock
 
         # create stem
 
@@ -323,7 +313,7 @@ class Enformer(nn.Module):
 
         # create conv tower
 
-        filter_list = exponential_linspace_int(half_dim, dim, num = (num_downsamples - 1), divisible_by = dim_divisible_by)
+        filter_list = exponential_linspace_int(half_dim, config.dim, num = (config.num_downsamples - 1), divisible_by = config.dim_divisible_by)
         filter_list = [half_dim, *filter_list]
 
         conv_layers = []
@@ -339,28 +329,28 @@ class Enformer(nn.Module):
         # transformer
 
         transformer = []
-        for _ in range(depth):
+        for _ in range(config.depth):
             transformer.append(nn.Sequential(
                 Residual(nn.Sequential(
-                    nn.LayerNorm(dim),
+                    nn.LayerNorm(config.dim),
                     Attention(
-                        dim,
-                        heads = heads,
-                        dim_key = attn_dim_key,
-                        dim_value = dim // heads,
-                        dropout = attn_dropout,
-                        pos_dropout = pos_dropout,
-                        num_rel_pos_features = dim // heads
+                        config.dim,
+                        heads = config.heads,
+                        dim_key = config.attn_dim_key,
+                        dim_value = config.dim // config.heads,
+                        dropout = config.attn_dropout,
+                        pos_dropout = config.pos_dropout,
+                        num_rel_pos_features = config.dim // config.heads
                     ),
-                    nn.Dropout(dropout_rate)
+                    nn.Dropout(config.dropout_rate)
                 )),
                 Residual(nn.Sequential(
-                    nn.LayerNorm(dim),
-                    nn.Linear(dim, dim * 2),
-                    nn.Dropout(dropout_rate),
+                    nn.LayerNorm(config.dim),
+                    nn.Linear(config.dim, config.dim * 2),
+                    nn.Dropout(config.dropout_rate),
                     nn.ReLU(),
-                    nn.Linear(dim * 2, dim),
-                    nn.Dropout(dropout_rate)
+                    nn.Linear(config.dim * 2, config.dim),
+                    nn.Dropout(config.dropout_rate)
                 ))
             ))
 
@@ -371,8 +361,8 @@ class Enformer(nn.Module):
 
         # target cropping
 
-        self.target_length = target_length
-        self.crop_final = TargetLengthCrop(target_length)
+        self.target_length = config.target_length
+        self.crop_final = TargetLengthCrop(config.target_length)
 
         # final pointwise
 
@@ -380,7 +370,7 @@ class Enformer(nn.Module):
             Rearrange('b n d -> b d n'),
             conv_block_klass(filter_list[-1], twice_dim, 1),
             Rearrange('b d n -> b n d'),
-            nn.Dropout(dropout_rate / 8),
+            nn.Dropout(config.dropout_rate / 8),
             GELU()
         )
 
@@ -399,11 +389,11 @@ class Enformer(nn.Module):
         self._heads = nn.ModuleDict(map_values(lambda features: nn.Sequential(
             nn.Linear(twice_dim, features),
             nn.Softplus()
-        ), output_heads))
+        ), config.output_heads))
 
         # use checkpointing on transformer trunk
 
-        self.use_checkpointing = use_checkpointing
+        self.use_checkpointing = config.use_checkpointing
 
     def set_target_length(self, target_length):
         crop_module = self._trunk[-2]

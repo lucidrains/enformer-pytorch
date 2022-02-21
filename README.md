@@ -14,9 +14,9 @@ $ pip install enformer-pytorch
 
 ```python
 import torch
-from enformer_pytorch import Enformer
+from enformer_pytorch import EnformerConfig, Enformer
 
-model = Enformer(
+config = EnformerConfig(
     dim = 1536,
     depth = 11,
     heads = 8,
@@ -24,6 +24,8 @@ model = Enformer(
     target_length = 896,
 )
 
+model = Enformer(config)
+    
 seq = torch.randint(0, 5, (1, 196_608)) # for ACGTN, in that order (-1 for padding)
 output = model(seq)
 
@@ -35,15 +37,17 @@ You can also directly pass in the sequence as one-hot encodings, which must be f
 
 ```python
 import torch
-from enformer_pytorch import Enformer, seq_indices_to_one_hot
+from enformer_pytorch import EnformerConfig, Enformer, seq_indices_to_one_hot
 
-model = Enformer(
+config = EnformerConfig(
     dim = 1536,
     depth = 11,
     heads = 8,
     output_heads = dict(human = 5313, mouse = 1643),
     target_length = 896,
 )
+
+model = Enformer(config)
 
 seq = torch.randint(0, 5, (1, 196_608))
 one_hot = seq_indices_to_one_hot(seq)
@@ -58,15 +62,17 @@ Finally, one can fetch the embeddings, for fine-tuning and otherwise, by setting
 
 ```python
 import torch
-from enformer_pytorch import Enformer, seq_indices_to_one_hot
+from enformer_pytorch import EnformerConfig, Enformer, seq_indices_to_one_hot
 
-model = Enformer(
+config = EnformerConfig(
     dim = 1536,
     depth = 11,
     heads = 8,
     output_heads = dict(human = 5313, mouse = 1643),
     target_length = 896,
 )
+
+model = Enformer(config)
 
 seq = torch.randint(0, 5, (1, 196_608))
 one_hot = seq_indices_to_one_hot(seq)
@@ -80,15 +86,17 @@ For training, you can directly pass the head and target in to get the poisson lo
 
 ```python
 import torch
-from enformer_pytorch import Enformer, seq_indices_to_one_hot
+from enformer_pytorch import EnformerConfig, Enformer, seq_indices_to_one_hot
 
-model = Enformer(
+config = EnformerConfig(
     dim = 1536,
     depth = 11,
     heads = 8,
     output_heads = dict(human = 5313, mouse = 1643),
     target_length = 200,
-).cuda()
+)
+
+model = Enformer(config).cuda()
 
 seq = torch.randint(0, 5, (196_608 // 2,)).cuda()
 target = torch.randn(200, 5313).cuda()
@@ -117,50 +125,34 @@ corr_coef # pearson R, used as a metric in the paper
 
 Warning: the pretrained models so far have not hit the mark of what was presented in the paper. if you would like to help out, please join <a href="https://discord.com/invite/s7WyNU24aM">this discord</a>. replication efforts ongoing
 
-To use a pretrained model (may not be of the same quality as the one in the paper yet), first install `gdown`
-
-```bash
-$ pip install gdown
-```
-
-Then
+To use a pretrained model (may not be of the same quality as the one in the paper yet), simply use the `from_pretrained` method (powered by [HuggingFace](https://huggingface.co/)):
 
 ```python
-from enformer_pytorch import load_pretrained_model
+from enformer_pytorch import Enformer
 
-model = load_pretrained_model('preview')
+model = Enformer.from_pretrained("EleutherAI/enformer-preview")
 
 # do your fine-tuning
 ```
+
+This is made possible thanks to HuggingFace's [custom model](https://huggingface.co/docs/transformers/master/en/custom_models) feature. All Enformer checkpoints can be found on the [hub](https://huggingface.co/models?other=enformer).
 
 You can also load, with overriding of the `target_length` parameter, if you are working with shorter sequence lengths
 
 ```python
-from enformer_pytorch import load_pretrained_model
+from enformer_pytorch import Enformer
 
-model = load_pretrained_model('preview', target_length = 128, dropout_rate = 0.1)
+model = Enformer.from_pretrained('EleutherAI/enformer-preview', target_length = 128, dropout_rate = 0.1)
 
 # do your fine-tuning
-```
-
-You can also define the model externally, and then load the pretrained weights by passing it into `load_pretrained_model`
-
-```python
-from enformer_pytorch import Enformer, load_pretrained_model
-
-enformer = Enformer(dim = 1536, depth = 11, target_length = 128, dropout_rate = 0.1)
-
-load_pretrained_model('preview', model = enformer)
-
-# use enformer
 ```
 
 To save on memory during fine-tuning a large Enformer model
 
 ```python
-from enformer_pytorch import Enformer, load_pretrained_model
+from enformer_pytorch import Enformer
 
-enformer = load_pretrained_model('preview', use_checkpointing = True)
+enformer = Enformer.from_pretrained('EleutherAI/enformer-preview', use_checkpointing = True)
 
 # finetune enformer on a limited budget
 ```
@@ -173,16 +165,18 @@ Fine-tuning on new tracks
 
 ```python
 import torch
-from enformer_pytorch import Enformer
+from enformer_pytorch import EnformerConfig, Enformer
 from enformer_pytorch.finetune import HeadAdapterWrapper
 
-enformer = Enformer(
+config = EnformerConfig(
     dim = 1536,
     depth = 1,
     heads = 8,
     target_length = 200,
 )
 
+enformer = Enformer(config)
+    
 model = HeadAdapterWrapper(
     enformer = enformer,
     num_tracks = 128
@@ -199,16 +193,18 @@ Finetuning on contextual data (cell type, transcription factor, etc)
 
 ```python
 import torch
-from enformer_pytorch import Enformer
+from enformer_pytorch import EnformerConfig, Enformer
 from enformer_pytorch.finetune import ContextAdapterWrapper
 
-enformer = Enformer(
+config = EnformerConfig(
     dim = 1536,
     depth = 1,
     heads = 8,
     target_length = 200,
 )
 
+enformer = Enformer(config)
+    
 model = ContextAdapterWrapper(
     enformer = enformer,
     context_dim = 1024
@@ -232,16 +228,18 @@ Finally, there is also a way to use attention aggregation from a set of context 
 
 ```python
 import torch
-from enformer_pytorch import Enformer
+from enformer_pytorch import EnformerConfig, Enformer
 from enformer_pytorch.finetune import ContextAttentionAdapterWrapper
 
-enformer = Enformer(
+config = EnformerConfig(
     dim = 1536,
     depth = 1,
     heads = 8,
     target_length = 200,
 )
 
+enformer = Enformer(config)
+    
 model = ContextAttentionAdapterWrapper(
     enformer = enformer,
     context_dim = 1024,
@@ -295,13 +293,15 @@ ds = GenomeIntervalDataset(
     }
 )
 
-model = Enformer(
+config = EnformerConfig(
     dim = 1536,
     depth = 11,
     heads = 8,
     output_heads = dict(human = 5313, mouse = 1643),
     target_length = 896,
 )
+
+model = Enformer(config)
 
 seq = ds[0] # (196608,)
 pred = model(seq, head = 'human') # (896, 5313)
