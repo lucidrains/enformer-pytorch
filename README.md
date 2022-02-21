@@ -130,19 +130,19 @@ To use a pretrained model (may not be of the same quality as the one in the pape
 ```python
 from enformer_pytorch import Enformer
 
-model = Enformer.from_pretrained("eleutherai/preview")
+model = Enformer.from_pretrained("EleutherAI/enformer-preview")
 
 # do your fine-tuning
 ```
 
-All Enformer checkpoints can be found [here](https://huggingface.co/models?other=enformer).
+This is made possible thanks to HuggingFace's [custom model](https://huggingface.co/docs/transformers/master/en/custom_models) feature. All Enformer checkpoints can be found on the [hub](https://huggingface.co/models?other=enformer).
 
 You can also load, with overriding of the `target_length` parameter, if you are working with shorter sequence lengths
 
 ```python
 from enformer_pytorch import Enformer
 
-model = Enformer.from_pretrained('eleutherai/preview', target_length = 128, dropout_rate = 0.1)
+model = Enformer.from_pretrained('EleutherAI/enformer-preview', target_length = 128, dropout_rate = 0.1)
 
 # do your fine-tuning
 ```
@@ -152,7 +152,7 @@ To save on memory during fine-tuning a large Enformer model
 ```python
 from enformer_pytorch import Enformer
 
-enformer = Enformer.from_pretrained('eleutherai/preview', use_checkpointing = True)
+enformer = Enformer.from_pretrained('EleutherAI/enformer-preview', use_checkpointing = True)
 
 # finetune enformer on a limited budget
 ```
