@@ -14,17 +14,15 @@ $ pip install enformer-pytorch
 
 ```python
 import torch
-from enformer_pytorch import EnformerConfig, Enformer
+from enformer_pytorch import Enformer
 
-config = EnformerConfig(
+model = Enformer.from_hparams(
     dim = 1536,
     depth = 11,
     heads = 8,
     output_heads = dict(human = 5313, mouse = 1643),
     target_length = 896,
 )
-
-model = Enformer(config)
     
 seq = torch.randint(0, 5, (1, 196_608)) # for ACGTN, in that order (-1 for padding)
 output = model(seq)
@@ -37,17 +35,15 @@ You can also directly pass in the sequence as one-hot encodings, which must be f
 
 ```python
 import torch
-from enformer_pytorch import EnformerConfig, Enformer, seq_indices_to_one_hot
+from enformer_pytorch import Enformer, seq_indices_to_one_hot
 
-config = EnformerConfig(
+model = Enformer.from_hparams(
     dim = 1536,
     depth = 11,
     heads = 8,
     output_heads = dict(human = 5313, mouse = 1643),
     target_length = 896,
 )
-
-model = Enformer(config)
 
 seq = torch.randint(0, 5, (1, 196_608))
 one_hot = seq_indices_to_one_hot(seq)
@@ -62,17 +58,15 @@ Finally, one can fetch the embeddings, for fine-tuning and otherwise, by setting
 
 ```python
 import torch
-from enformer_pytorch import EnformerConfig, Enformer, seq_indices_to_one_hot
+from enformer_pytorch import Enformer, seq_indices_to_one_hot
 
-config = EnformerConfig(
+model = Enformer.from_hparams(
     dim = 1536,
     depth = 11,
     heads = 8,
     output_heads = dict(human = 5313, mouse = 1643),
     target_length = 896,
 )
-
-model = Enformer(config)
 
 seq = torch.randint(0, 5, (1, 196_608))
 one_hot = seq_indices_to_one_hot(seq)
@@ -86,17 +80,15 @@ For training, you can directly pass the head and target in to get the poisson lo
 
 ```python
 import torch
-from enformer_pytorch import EnformerConfig, Enformer, seq_indices_to_one_hot
+from enformer_pytorch import Enformer, seq_indices_to_one_hot
 
-config = EnformerConfig(
+model = Enformer.from_hparams(
     dim = 1536,
     depth = 11,
     heads = 8,
     output_heads = dict(human = 5313, mouse = 1643),
     target_length = 200,
-)
-
-model = Enformer(config).cuda()
+).cuda()
 
 seq = torch.randint(0, 5, (196_608 // 2,)).cuda()
 target = torch.randn(200, 5313).cuda()
@@ -165,17 +157,15 @@ Fine-tuning on new tracks
 
 ```python
 import torch
-from enformer_pytorch import EnformerConfig, Enformer
+from enformer_pytorch import Enformer
 from enformer_pytorch.finetune import HeadAdapterWrapper
 
-config = EnformerConfig(
+enformer = Enformer.from_hparams(
     dim = 1536,
     depth = 1,
     heads = 8,
     target_length = 200,
 )
-
-enformer = Enformer(config)
     
 model = HeadAdapterWrapper(
     enformer = enformer,
@@ -193,17 +183,15 @@ Finetuning on contextual data (cell type, transcription factor, etc)
 
 ```python
 import torch
-from enformer_pytorch import EnformerConfig, Enformer
+from enformer_pytorch import Enformer
 from enformer_pytorch.finetune import ContextAdapterWrapper
 
-config = EnformerConfig(
+enformer = Enformer.from_hparams(
     dim = 1536,
     depth = 1,
     heads = 8,
     target_length = 200,
 )
-
-enformer = Enformer(config)
     
 model = ContextAdapterWrapper(
     enformer = enformer,
@@ -228,17 +216,15 @@ Finally, there is also a way to use attention aggregation from a set of context 
 
 ```python
 import torch
-from enformer_pytorch import EnformerConfig, Enformer
+from enformer_pytorch import Enformer
 from enformer_pytorch.finetune import ContextAttentionAdapterWrapper
 
-config = EnformerConfig(
+enformer = Enformer.from_hparams(
     dim = 1536,
     depth = 1,
     heads = 8,
     target_length = 200,
 )
-
-enformer = Enformer(config)
     
 model = ContextAttentionAdapterWrapper(
     enformer = enformer,
@@ -293,15 +279,13 @@ ds = GenomeIntervalDataset(
     }
 )
 
-config = EnformerConfig(
+model = Enformer.from_hparams(
     dim = 1536,
     depth = 11,
     heads = 8,
     output_heads = dict(human = 5313, mouse = 1643),
     target_length = 896,
 )
-
-model = Enformer(config)
 
 seq = ds[0] # (196608,)
 pred = model(seq, head = 'human') # (896, 5313)

@@ -294,6 +294,10 @@ class Attention(nn.Module):
 class Enformer(PreTrainedModel):
     config_class = EnformerConfig
 
+    @staticmethod
+    def from_hparams(**kwargs):
+        return Enformer(EnformerConfig(**kwargs))
+
     def __init__(self, config):
         super().__init__(config)
         self.dim = config.dim
