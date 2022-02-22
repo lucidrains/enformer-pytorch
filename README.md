@@ -307,7 +307,7 @@ Special thanks goes out to <a href="https://www.eleuther.ai/">EleutherAI</a> for
 - [x] fix handling of 'N' in sequence, figure out representation of N in basenji barnyard
 - [x] take care of shift augmentation in `GenomicIntervalDataset`
 - [x] speed up `str_to_seq_indices`
-- [x] add to EleutherAI huggingface (done thanks to <a href="https://github.com/NielsRogge">Neils</a>)
+- [x] add to EleutherAI huggingface (done thanks to <a href="https://github.com/NielsRogge">Niels</a>)
 - [ ] offer some basic training utils, as gradient accumulation will be needed for fine tuning
 
 ## Citations
