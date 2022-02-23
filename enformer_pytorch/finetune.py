@@ -5,7 +5,7 @@ from torch import nn, einsum
 
 from einops import rearrange, repeat
 from einops.layers.torch import Rearrange
-from enformer_pytorch.enformer_pytorch import Enformer, poisson_loss
+from enformer_pytorch.modeling_enformer import Enformer, poisson_loss
 
 def exists(val):
     return val is not None
