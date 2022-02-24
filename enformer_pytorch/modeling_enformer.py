@@ -293,6 +293,7 @@ class Attention(nn.Module):
 
 class Enformer(PreTrainedModel):
     config_class = EnformerConfig
+    base_model_prefix = "enformer"
 
     @staticmethod
     def from_hparams(**kwargs):
