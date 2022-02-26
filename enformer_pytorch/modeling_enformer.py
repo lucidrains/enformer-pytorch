@@ -391,14 +391,19 @@ class Enformer(PreTrainedModel):
 
         # create final heads for human and mouse
 
-        self._heads = nn.ModuleDict(map_values(lambda features: nn.Sequential(
-            nn.Linear(twice_dim, features),
-            nn.Softplus()
-        ), config.output_heads))
+        self.add_heads(**config.output_heads)
 
         # use checkpointing on transformer trunk
 
         self.use_checkpointing = config.use_checkpointing
+
+    def add_heads(self, **kwargs):
+        self.output_heads = kwargs
+
+        self._heads = nn.ModuleDict(map_values(lambda features: nn.Sequential(
+            nn.Linear(self.dim * 2, features),
+            nn.Softplus()
+        ), kwargs))
 
     def set_target_length(self, target_length):
         crop_module = self._trunk[-2]
