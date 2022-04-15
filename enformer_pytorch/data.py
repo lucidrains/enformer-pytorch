@@ -107,7 +107,7 @@ class FastaInterval():
         self.shift_augs = shift_augs
         self.rc_aug = rc_aug
 
-    def __call__(self, chr_name, start, end):
+    def __call__(self, chr_name, start, end, return_augs = False):
         interval_length = end - start
         chromosome = self.seqs[chr_name]
         chromosome_length = len(chromosome)
@@ -152,10 +152,21 @@ class FastaInterval():
 
         one_hot = str_to_one_hot(seq)
 
-        if self.rc_aug and coin_flip():
+        rc_aug = self.rc_aug and coin_flip()
+
+        if rc_aug:
             one_hot = one_hot_reverse_complement(one_hot)
 
-        return one_hot
+        if not return_augs:
+            return one_hot
+
+        # returns the shift integer as well as the bool (for whether reverse complement was activated)
+        # for this particular genomic sequence
+
+        rand_shift_tensor = torch.tensor([rand_shift])
+        rand_aug_bool_tensor = torch.tensor([rc_aug])
+
+        return one_hot, rand_shift_tensor, rand_aug_bool_tensor
 
 
 class GenomeIntervalDataset(Dataset):
@@ -168,7 +179,8 @@ class GenomeIntervalDataset(Dataset):
         context_length = None,
         return_seq_indices = False,
         shift_augs = None,
-        rc_aug = False
+        rc_aug = False,
+        return_augs = False
     ):
         super().__init__()
         bed_path = Path(bed_file)
@@ -190,6 +202,8 @@ class GenomeIntervalDataset(Dataset):
             rc_aug = rc_aug
         )
 
+        self.return_augs = return_augs
+
     def __len__(self):
         return len(self.df)
 
@@ -197,4 +211,4 @@ class GenomeIntervalDataset(Dataset):
         interval = self.df.row(ind)
         chr_name, start, end = (interval[0], interval[1], interval[2])
         chr_name = self.chr_bed_to_fasta_map.get(chr_name, chr_name)
-        return self.fasta(chr_name, start, end)
+        return self.fasta(chr_name, start, end, return_augs = self.return_augs)

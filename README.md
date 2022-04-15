@@ -291,6 +291,29 @@ seq = ds[0] # (196608,)
 pred = model(seq, head = 'human') # (896, 5313)
 ```
 
+To return the random shift value, as well as whether reverse complement was activated (in the case you need to reverse the corresponding chip-seq target data), just set `return_augs = True` when initializing the `GenomicIntervalDataset`
+
+```python
+import torch
+import polars as pl
+from enformer_pytorch import Enformer, GenomeIntervalDataset
+
+filter_train = lambda df: df.filter(pl.col('column_4') == 'train')
+
+ds = GenomeIntervalDataset(
+    bed_file = './sequences.bed',                       # bed file - columns 0, 1, 2 must be <chromosome>, <start position>, <end position>
+    fasta_file = './hg38.ml.fa',                        # path to fasta file
+    filter_df_fn = filter_train,                        # filter dataframe function
+    return_seq_indices = True,                          # return nucleotide indices (ACGTN) or one hot encodings
+    shift_augs = (-2, 2),                               # random shift augmentations from -2 to +2 basepairs
+    rc_aug = True,                                      # use reverse complement augmentation with 50% probability
+    context_length = 196_608,
+    return_augs = True                                  # return the augmentation meta data
+)
+
+seq, rand_shift_val, rc_bool = ds[0] # (196608,), (1,), (1,)
+```
+
 ## Appreciation
 
 Special thanks goes out to <a href="https://www.eleuther.ai/">EleutherAI</a> for providing the resources to retrain the model in an acceptable amount of time
