@@ -314,7 +314,6 @@ class Enformer(PreTrainedModel):
         # create stem
 
         self.stem = nn.Sequential(
-            Rearrange('b n d -> b d n'),
             nn.Conv1d(4, half_dim, 15, padding = 7),
             Residual(conv_block_klass(half_dim)),
             AttentionPool(half_dim, pool_size = 2)
@@ -363,10 +362,7 @@ class Enformer(PreTrainedModel):
                 ))
             ))
 
-        self.transformer = nn.Sequential(
-            Rearrange('b d n -> b n d'),
-            *transformer
-        )
+        self.transformer = nn.Sequential(*transformer)
 
         # target cropping
 
@@ -386,8 +382,10 @@ class Enformer(PreTrainedModel):
         # create trunk sequential module
 
         self._trunk = nn.Sequential(
+            Rearrange('b n d -> b d n'),
             self.stem,
             self.conv_tower,
+            Rearrange('b d n -> b n d'),
             self.transformer,
             self.crop_final,
             self.final_pointwise
@@ -422,14 +420,11 @@ class Enformer(PreTrainedModel):
         return self._heads
 
     def trunk_checkpointed(self, x):
+        x = rearrange(x, 'b n d -> b d n')
         x = self.stem(x)
         x = self.conv_tower(x)
-        x = self.transformer[0](x)
-
-        # todo (move the rearrange out of self.transformers sequential module, and transfer all weights to new module rearrangement, directly checkpoint on self.transformers)
-        transformer_blocks = self.transformer[1:]
-        x = checkpoint_sequential(nn.Sequential(*transformer_blocks), len(transformer_blocks), x)
-
+        x = rearrange(x, 'b d n -> b n d')
+        x = checkpoint_sequential(self.transformer, len(self.transformer), x)
         x = self.crop_final(x)
         x = self.final_pointwise(x)
         return x
