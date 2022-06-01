@@ -11,8 +11,8 @@ def copy_bn(mod, vars, path):
     mod.weight.data.copy_(bn_scale)
     mod.bias.data.copy_(bn_offset)
 
-    mod.running_var.data.copy_(rearrange(bn_running_var, '() () d -> d'))
-    mod.running_mean.data.copy_(rearrange(bn_running_mean, '() () d -> d'))
+    mod.running_var.data.copy_(rearrange(bn_running_var, '1 1 d -> d'))
+    mod.running_mean.data.copy_(rearrange(bn_running_mean, '1 1 d -> d'))
 
 def copy_conv(mod, vars, path):
     bias = vars[f'{path}b:0']
@@ -22,7 +22,7 @@ def copy_conv(mod, vars, path):
 
 def copy_attn_pool(mod, vars, path):
     attn_pool_proj = vars[path]
-    mod.to_attn_logits.data.copy_(attn_pool_proj)
+    mod.to_attn_logits.weight.data.copy_(rearrange(attn_pool_proj, 'i o -> o i 1 1'))
 
 def copy_linear(mod, vars, path, has_bias = True):
     weight = vars[f'{path}w:0']
@@ -50,8 +50,8 @@ def copy_tf_to_pytorch(tf_model, pytorch_model):
     stem_point_conv = pytorch_model.stem[1].fn[2]
     stem_attn_pool = pytorch_model.stem[2]
 
-    copy_bn(stem_point_bn, tf_vars, 'enformer/trunk/stem/pointwise_conv_block/cross_replica_batch_norm/')
     copy_conv(stem_conv, tf_vars, 'enformer/trunk/stem/conv1_d/')
+    copy_bn(stem_point_bn, tf_vars, 'enformer/trunk/stem/pointwise_conv_block/cross_replica_batch_norm/')
     copy_conv(stem_point_conv, tf_vars, 'enformer/trunk/stem/pointwise_conv_block/conv1_d/')
     copy_attn_pool(stem_attn_pool, tf_vars, 'enformer/trunk/stem/softmax_pooling/linear/w:0')
 
