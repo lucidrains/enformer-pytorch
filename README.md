@@ -115,60 +115,34 @@ corr_coef # pearson R, used as a metric in the paper
 
 ## Pretrained Model
 
-Deepmind has released the weights for their tensorflow sonnet Enformer model! I have ported it over to pytorch at <a href="https://drive.google.com/u/0/uc?id=1sg41meLWKPMaM6hMx4aBWSwlVOfXbe0R">here</a> (~1GB). There are still some rounding errors that seem to be accruing across the layers, resulting in an absolute error as high as `0.5`. However, correlation coefficient look good so I am releasing it and will upload it to Huggingface in due time. Will keep working on figuring out where the numerical errors are happening (it may be the attention pooling module, as I noticed the attention logits are pretty high).
+Deepmind has released the weights for their tensorflow sonnet Enformer model! I have ported it over to Pytorch and uploaded it to <a href="https://huggingface.co/EleutherAI/enformer-official-rough">🤗 Huggingface</a> (~1GB). There are still some rounding errors that seem to be accruing across the layers, resulting in an absolute error as high as `0.5`. However, correlation coefficient look good so I am releasing the 'rough'ly working version. Will keep working on figuring out where the numerical errors are happening (it may be the attention pooling module, as I noticed the attention logits are pretty high).
 
 ```bash
 $ pip install enformer-pytorch==0.5
 ````
 
-Copy model to local directory
-
-```bash
-$ cp /path/to/official-enformer-rough.pt ./official-enformer-rough.pt
-```
-
 Loading the model
 
 ```python
-enformer = Enformer.from_hparams().cuda()
-enformer.load_state_dict(torch.load('./official-enformer-rough.pt'))
+from enformer_pytorch import Enformer
+enformer = Enformer.from_pretrained('EleutherAI/enformer-official-rough')
 ```
 
-Quick test
+Quick sanity check on a single human validation point
 
 ```python
 $ python test_pretrained.py
 # 0.5963 correlation coefficient on a validation sample
 ```
 
-## Older models (no longer recommended)
-
-First make sure you are on version 0.4.5 or below
-
-```
-$ pip install enformer-pytorch==0.4.5
-```
-
-Warning: the pretrained models so far have not hit the mark of what was presented in the paper. if you would like to help out, please join <a href="https://discord.com/invite/s7WyNU24aM">this discord</a>. replication efforts ongoing
-
-To use a pretrained model (may not be of the same quality as the one in the paper yet), simply use the `from_pretrained` method (powered by [HuggingFace](https://huggingface.co/)):
-
-```python
-from enformer_pytorch import Enformer
-
-model = Enformer.from_pretrained("EleutherAI/enformer-preview")
-
-# do your fine-tuning
-```
-
-This is made possible thanks to HuggingFace's [custom model](https://huggingface.co/docs/transformers/master/en/custom_models) feature. All Enformer checkpoints can be found on the [hub](https://huggingface.co/models?other=enformer).
+This is all made possible thanks to HuggingFace's [custom model](https://huggingface.co/docs/transformers/master/en/custom_models) feature.
 
 You can also load, with overriding of the `target_length` parameter, if you are working with shorter sequence lengths
 
 ```python
 from enformer_pytorch import Enformer
 
-model = Enformer.from_pretrained('EleutherAI/enformer-preview', target_length = 128, dropout_rate = 0.1)
+model = Enformer.from_pretrained('EleutherAI/enformer-official-rough', target_length = 128, dropout_rate = 0.1)
 
 # do your fine-tuning
 ```
@@ -178,7 +152,7 @@ To save on memory during fine-tuning a large Enformer model
 ```python
 from enformer_pytorch import Enformer
 
-enformer = Enformer.from_pretrained('EleutherAI/enformer-preview', use_checkpointing = True)
+enformer = Enformer.from_pretrained('EleutherAI/enformer-official-rough', use_checkpointing = True)
 
 # finetune enformer on a limited budget
 ```
