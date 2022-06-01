@@ -81,7 +81,7 @@ def get_positional_features_gamma(positions, features, seq_len, stddev = None, s
     rate = mean / stddev ** 2
     probabilities = gamma_pdf(positions.float().abs()[..., None], concentration, rate)
     probabilities = probabilities + eps
-    outputs = probabilities / torch.amax(probabilities)
+    outputs = probabilities / torch.amax(probabilities, dim = -1, keepdim = True)
     return outputs
 
 def get_positional_embed(seq_len, feature_size, device):

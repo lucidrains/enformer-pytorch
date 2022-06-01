@@ -4,11 +4,12 @@ setup(
   name = 'enformer-pytorch',
   packages = find_packages(exclude=[]),
   include_package_data = True,
-  version = '0.4.5',
+  version = '0.4.6',
   license='MIT',
   description = 'Enformer - Pytorch',
   author = 'Phil Wang',
   author_email = 'lucidrains@gmail.com',
+  long_description_content_type = 'text/markdown',
   url = 'https://github.com/lucidrains/enformer-pytorch',
   keywords = [
     'artificial intelligence',
