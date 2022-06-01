@@ -1,7 +1,13 @@
 import torch
 from enformer_pytorch import Enformer
 
-enformer = Enformer.from_pretrained('EleutherAI/enformer-preview').cuda()
+# download pytorch weights from official set of deepmind enformer weights
+# from https://drive.google.com/u/0/uc?id=1sg41meLWKPMaM6hMx4aBWSwlVOfXbe0R
+
+model_path = './official-enformer-rough.pt'
+
+enformer = Enformer.from_hparams().cuda()
+enformer.load_state_dict(torch.load(model_path))
 enformer.eval()
 
 data = torch.load('./data/test-sample.pt')
