@@ -174,6 +174,10 @@ class TargetLengthCrop(nn.Module):
             raise ValueError(f'sequence length {seq_len} is less than target length {target_len}')
 
         trim = (target_len - seq_len) // 2
+
+        if trim == 0:
+            return x
+
         return x[:, -trim:trim]
 
 def ConvBlock(dim, dim_out = None, kernel_size = 1):
