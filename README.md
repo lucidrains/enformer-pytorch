@@ -324,7 +324,7 @@ seq, rand_shift_val, rc_bool = ds[0] # (196608,), (1,), (1,)
 
 ## Appreciation
 
-Special thanks goes out to <a href="https://www.eleuther.ai/">EleutherAI</a> for providing the resources to retrain the model in an acceptable amount of time
+Special thanks goes out to <a href="https://www.eleuther.ai/">EleutherAI</a> for providing the resources to retrain the model, during a time when the official model from Deepmind had not been released yet.
 
 ## Todo
 
