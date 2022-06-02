@@ -117,14 +117,17 @@ corr_coef # pearson R, used as a metric in the paper
 
 Deepmind has released the weights for their tensorflow sonnet Enformer model! I have ported it over to Pytorch and uploaded it to <a href="https://huggingface.co/EleutherAI/enformer-official-rough">🤗 Huggingface</a> (~1GB). There are still some rounding errors that seem to be accruing across the layers, resulting in an absolute error as high as `0.5`. However, correlation coefficient look good so I am releasing the 'rough'ly working version. Will keep working on figuring out where the numerical errors are happening (it may be the attention pooling module, as I noticed the attention logits are pretty high).
 
+Update: <a href="https://github.com/jstjohn">John St. John</a> did some work and found that the `enformer-official-rough` model hits the reported marks in the paper - human pearson R of `0.625` for validation, and `0.65` for test.
+
 ```bash
-$ pip install enformer-pytorch==0.5
+$ pip install enformer-pytorch>=0.5
 ````
 
 Loading the model
 
 ```python
 from enformer_pytorch import Enformer
+
 enformer = Enformer.from_pretrained('EleutherAI/enformer-official-rough')
 ```
 
