@@ -30,7 +30,6 @@ class EnformerConfig(PretrainedConfig):
         self.attn_dropout = attn_dropout
         self.pos_dropout = pos_dropout
         self.use_checkpointing = use_checkpointing
-        self.use_convnext = use_convnext
         self.num_downsamples = num_downsamples
         self.dim_divisible_by = dim_divisible_by
         
