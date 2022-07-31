@@ -7,6 +7,8 @@ from einops import rearrange, repeat
 from einops.layers.torch import Rearrange
 from enformer_pytorch.modeling_enformer import Enformer, poisson_loss
 
+from discrete_key_value_bottleneck_pytorch import DiscreteKeyValueBottleneck
+
 def exists(val):
     return val is not None
 
@@ -87,14 +89,32 @@ class HeadAdapterWrapper(nn.Module):
         self,
         *,
         enformer,
-        num_tracks
+        num_tracks,
+        discrete_key_value_bottleneck = False,
+        bottleneck_num_memories = 256,
+        bottleneck_num_codebooks = 4,
+        bottleneck_decay = 0.9,
     ):
         super().__init__()
         assert isinstance(enformer, Enformer)
+        enformer_hidden_dim = enformer.dim * 2
+
+        self.discrete_key_value_bottleneck = discrete_key_value_bottleneck
+
+        if discrete_key_value_bottleneck:
+            enformer = DiscreteKeyValueBottleneck(
+                encoder = enformer,
+                dim = enformer_hidden_dim,
+                num_memory_codebooks = bottleneck_num_codebooks,
+                num_memories = bottleneck_num_memories,
+                dim_memory = enformer_hidden_dim // bottleneck_num_codebooks,
+                decay = bottleneck_decay,
+            )
+
         self.enformer = enformer
 
         self.to_tracks = nn.Sequential(
-            nn.Linear(enformer.dim * 2, num_tracks),
+            nn.Linear(enformer_hidden_dim, num_tracks),
             nn.Softplus()
         )
 
@@ -106,7 +126,11 @@ class HeadAdapterWrapper(nn.Module):
         freeze_enformer = False,
         finetune_enformer_ln_only = False
     ):
-        embeddings = get_enformer_embeddings(self.enformer, seq, freeze = freeze_enformer, train_layernorms_only = finetune_enformer_ln_only)
+        if self.discrete_key_value_bottleneck:
+            embeddings = self.enformer(seq, return_only_embeddings = True)
+        else:
+            embeddings = get_enformer_embeddings(self.enformer, seq, freeze = freeze_enformer, train_layernorms_only = finetune_enformer_ln_only)
+
         preds = self.to_tracks(embeddings)
 
         if not exists(target):
@@ -122,13 +146,31 @@ class ContextAdapterWrapper(nn.Module):
         self,
         *,
         enformer,
-        context_dim
+        context_dim,
+        discrete_key_value_bottleneck = False,
+        bottleneck_num_memories = 256,
+        bottleneck_num_codebooks = 4,
+        bottleneck_decay = 0.9,
     ):
         super().__init__()
         assert isinstance(enformer, Enformer)
+        enformer_hidden_dim = enformer.dim * 2
+
+        self.discrete_key_value_bottleneck = discrete_key_value_bottleneck
+
+        if discrete_key_value_bottleneck:
+            enformer = DiscreteKeyValueBottleneck(
+                encoder = enformer,
+                dim = enformer_hidden_dim,
+                num_memory_codebooks = bottleneck_num_codebooks,
+                num_memories = bottleneck_num_memories,
+                dim_memory = enformer_hidden_dim // bottleneck_num_codebooks,
+                decay = bottleneck_decay,
+            )
+
         self.enformer = enformer
 
-        self.to_context_weights = nn.Parameter(torch.randn(context_dim, enformer.dim * 2))
+        self.to_context_weights = nn.Parameter(torch.randn(context_dim, enformer_hidden_dim))
         self.to_context_bias = nn.Parameter(torch.randn(context_dim))
 
     def forward(
@@ -140,7 +182,10 @@ class ContextAdapterWrapper(nn.Module):
         freeze_enformer = False,
         finetune_enformer_ln_only = False
     ):
-        embeddings = get_enformer_embeddings(self.enformer, seq, freeze = freeze_enformer, train_layernorms_only = finetune_enformer_ln_only)
+        if self.discrete_key_value_bottleneck:
+            embeddings = self.enformer(seq, return_only_embeddings = True)
+        else:
+            embeddings = get_enformer_embeddings(self.enformer, seq, freeze = freeze_enformer, train_layernorms_only = finetune_enformer_ln_only)
 
         weights = einsum('t d, d e -> t e', context, self.to_context_weights)
         bias = einsum('t d, d -> t', context, self.to_context_bias)
@@ -163,12 +208,29 @@ class ContextAttentionAdapterWrapper(nn.Module):
         enformer,
         context_dim,
         heads = 8,
-        dim_head = 64
+        dim_head = 64,
+        discrete_key_value_bottleneck = False,
+        bottleneck_num_memories = 256,
+        bottleneck_num_codebooks = 4,
+        bottleneck_decay = 0.9,
     ):
         super().__init__()
         assert isinstance(enformer, Enformer)
-        self.enformer = enformer
         enformer_hidden_dim = enformer.dim * 2
+
+        self.discrete_key_value_bottleneck = discrete_key_value_bottleneck
+
+        if discrete_key_value_bottleneck:
+            enformer = DiscreteKeyValueBottleneck(
+                encoder = enformer,
+                dim = enformer_hidden_dim,
+                num_memory_codebooks = bottleneck_num_codebooks,
+                num_memories = bottleneck_num_memories,
+                dim_memory = enformer_hidden_dim // bottleneck_num_codebooks,
+                decay = bottleneck_decay,
+            )
+
+        self.enformer = enformer
 
         self.query_norm = nn.LayerNorm(enformer_hidden_dim)
         self.key_values_norm = nn.LayerNorm(context_dim)
@@ -211,7 +273,11 @@ class ContextAttentionAdapterWrapper(nn.Module):
         """
 
         h = self.heads
-        embeddings = get_enformer_embeddings(self.enformer, seq, freeze = freeze_enformer, train_layernorms_only = finetune_enformer_ln_only)
+
+        if self.discrete_key_value_bottleneck:
+            embeddings = self.enformer(seq, return_only_embeddings = True)
+        else:
+            embeddings = get_enformer_embeddings(self.enformer, seq, freeze = freeze_enformer, train_layernorms_only = finetune_enformer_ln_only)
 
         # perform cross attention from genetic -> context
 
