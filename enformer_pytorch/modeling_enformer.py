@@ -135,7 +135,7 @@ class AttentionPool(nn.Module):
     def __init__(self, dim, pool_size = 2):
         super().__init__()
         self.pool_size = pool_size
-        self.pool_fn = Rearrange('b d (n p) -> b d n p', p = 2)
+        self.pool_fn = Rearrange('b d (n p) -> b d n p', p = pool_size)
         self.to_attn_logits = nn.Conv2d(dim, dim, 1, bias = False)
 
     def forward(self, x):
