@@ -134,13 +134,13 @@ class FastaInterval():
             start -= extra_left_seq
             end += extra_right_seq
 
-            if start < 0:
-                left_padding = -start
-                start = 0
+        if start < 0:
+            left_padding = -start
+            start = 0
 
-            if end > chromosome_length:
-                right_padding = end - chromosome_length
-                end = chromosome_length
+        if end > chromosome_length:
+            right_padding = end - chromosome_length
+            end = chromosome_length
 
         seq = ('.' * left_padding) + str(chromosome[start:end]) + ('.' * right_padding)
 
