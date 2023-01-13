@@ -40,21 +40,14 @@ def freeze_all_but_layernorms_(model):
     for m in model.modules():
         set_module_requires_grad_(m, isinstance(m, nn.LayerNorm))
 
-def unfreeze_last_n_layers_(enformer, n):
-    assert isinstance(enformer, Enformer)
-    transformer_blocks = enformer.transformer[1:]
-
-    for module in transformer_blocks[-n:]:
-        set_module_requires_grad_(module, True)
-
 def freeze_all_but_last_n_layers_(enformer, n):
     assert isinstance(enformer, Enformer)
     freeze_all_layers_(enformer)
 
-    transformer_blocks = enformer.transformer[1:]
+    transformer_blocks = enformer.transformer
 
     for module in transformer_blocks[-n:]:
-        set_module_requires_grad_(module, False)
+        set_module_requires_grad_(module, True)
 
 # get enformer embeddings
 
@@ -62,13 +55,18 @@ def get_enformer_embeddings(
     model,
     seq,
     freeze = False,
-    train_layernorms_only = False
+    train_layernorms_only = False,
+    train_last_n_layers_only = None
 ):
     freeze_batchnorms_(model)
 
     if train_layernorms_only:
         assert not freeze, 'you set the intent to train the layernorms of the enformer, yet also indicated you wanted to freeze the entire model'
         freeze_all_but_layernorms_(model)
+
+    if exists(train_last_n_layers_only):
+        assert not freeze, 'you set the intent to train last N layers of enformer, but also indicated you wanted to freeze the entire network'
+        freeze_all_but_last_n_layers_(model, train_last_n_layers_only)
 
     enformer_context = null_context() if not freeze else torch.no_grad()
 
@@ -124,12 +122,13 @@ class HeadAdapterWrapper(nn.Module):
         *,
         target = None,
         freeze_enformer = False,
-        finetune_enformer_ln_only = False
+        finetune_enformer_ln_only = False,
+        finetune_last_n_layers_only = None
     ):
         if self.discrete_key_value_bottleneck:
             embeddings = self.enformer(seq, return_only_embeddings = True)
         else:
-            embeddings = get_enformer_embeddings(self.enformer, seq, freeze = freeze_enformer, train_layernorms_only = finetune_enformer_ln_only)
+            embeddings = get_enformer_embeddings(self.enformer, seq, freeze = freeze_enformer, train_layernorms_only = finetune_enformer_ln_only, train_last_n_layers_only = finetune_last_n_layers_only)
 
         preds = self.to_tracks(embeddings)
 
@@ -180,12 +179,13 @@ class ContextAdapterWrapper(nn.Module):
         context,
         target = None,
         freeze_enformer = False,
-        finetune_enformer_ln_only = False
+        finetune_enformer_ln_only = False,
+        finetune_last_n_layers_only = None
     ):
         if self.discrete_key_value_bottleneck:
             embeddings = self.enformer(seq, return_only_embeddings = True)
         else:
-            embeddings = get_enformer_embeddings(self.enformer, seq, freeze = freeze_enformer, train_layernorms_only = finetune_enformer_ln_only)
+            embeddings = get_enformer_embeddings(self.enformer, seq, freeze = freeze_enformer, train_layernorms_only = finetune_enformer_ln_only, train_last_n_layers_only = finetune_last_n_layers_only)
 
         weights = einsum('t d, d e -> t e', context, self.to_context_weights)
         bias = einsum('t d, d -> t', context, self.to_context_bias)
@@ -260,7 +260,8 @@ class ContextAttentionAdapterWrapper(nn.Module):
         context_mask = None,
         target = None,
         freeze_enformer = False,
-        finetune_enformer_ln_only = False
+        finetune_enformer_ln_only = False,
+        finetune_last_n_layers_only = None
     ):
         """
         b - batch
@@ -277,7 +278,7 @@ class ContextAttentionAdapterWrapper(nn.Module):
         if self.discrete_key_value_bottleneck:
             embeddings = self.enformer(seq, return_only_embeddings = True)
         else:
-            embeddings = get_enformer_embeddings(self.enformer, seq, freeze = freeze_enformer, train_layernorms_only = finetune_enformer_ln_only)
+            embeddings = get_enformer_embeddings(self.enformer, seq, freeze = freeze_enformer, train_layernorms_only = finetune_enformer_ln_only, train_last_n_layers_only = finetune_last_n_layers_only)
 
         # perform cross attention from genetic -> context
 
