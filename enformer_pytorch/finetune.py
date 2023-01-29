@@ -1,4 +1,5 @@
 import torch
+from copy import deepcopy
 from contextlib import contextmanager
 import torch.nn.functional as F
 from torch import nn, einsum
@@ -15,6 +16,11 @@ def exists(val):
 @contextmanager
 def null_context():
     yield
+
+# better sequential
+
+def Sequential(*modules):
+    return nn.Sequential(*filter(exists, modules))
 
 # controlling freezing of layers
 
@@ -88,14 +94,16 @@ class HeadAdapterWrapper(nn.Module):
         *,
         enformer,
         num_tracks,
+        post_transformer_embed = False, # whether to take the embeddings from right after the transformer, instead of after the final pointwise convolutional - this would add another layernorm
         discrete_key_value_bottleneck = False,
         bottleneck_num_memories = 256,
         bottleneck_num_codebooks = 4,
         bottleneck_decay = 0.9,
+        transformer_embed_fn: nn.Module = nn.Identity()
     ):
         super().__init__()
         assert isinstance(enformer, Enformer)
-        enformer_hidden_dim = enformer.dim * 2
+        enformer_hidden_dim = enformer.dim * (2 if not post_transformer_embed else 1)
 
         self.discrete_key_value_bottleneck = discrete_key_value_bottleneck
 
@@ -109,7 +117,19 @@ class HeadAdapterWrapper(nn.Module):
                 decay = bottleneck_decay,
             )
 
+        self.post_transformer_embed = post_transformer_embed
+
         self.enformer = enformer
+
+        if post_transformer_embed:
+            self.enformer = deepcopy(enformer)
+            self.enformer._trunk[-1] = nn.Identity()
+            self.enformer.final_pointwise = nn.Identity()
+
+        self.post_embed_transform = Sequential(
+            transformer_embed_fn,
+            nn.LayerNorm(enformer_hidden_dim) if post_transformer_embed else None
+        )
 
         self.to_tracks = nn.Sequential(
             nn.Linear(enformer_hidden_dim, num_tracks),

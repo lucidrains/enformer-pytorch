@@ -180,7 +180,8 @@ enformer = Enformer.from_hparams(
     
 model = HeadAdapterWrapper(
     enformer = enformer,
-    num_tracks = 128
+    num_tracks = 128,
+    post_transformer_embed = False   # by default, embeddings are taken from after the final pointwise block w/ conv -> gelu - but if you'd like the embeddings right after the transformer block with a learned layernorm, set this to True
 ).cuda()
 
 seq = torch.randint(0, 5, (1, 196_608 // 2,)).cuda()
