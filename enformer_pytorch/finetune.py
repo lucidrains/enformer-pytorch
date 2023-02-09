@@ -62,7 +62,8 @@ def get_enformer_embeddings(
     seq,
     freeze = False,
     train_layernorms_only = False,
-    train_last_n_layers_only = None
+    train_last_n_layers_only = None,
+    enformer_kwargs: dict = {}
 ):
     freeze_batchnorms_(model)
 
@@ -77,7 +78,7 @@ def get_enformer_embeddings(
     enformer_context = null_context() if not freeze else torch.no_grad()
 
     with enformer_context:
-        embeddings = model(seq, return_only_embeddings = True)
+        embeddings = model(seq, return_only_embeddings = True, **enformer_kwargs)
 
         if freeze:
             embeddings.detach_()
@@ -99,7 +100,8 @@ class HeadAdapterWrapper(nn.Module):
         bottleneck_num_memories = 256,
         bottleneck_num_codebooks = 4,
         bottleneck_decay = 0.9,
-        transformer_embed_fn: nn.Module = nn.Identity()
+        transformer_embed_fn: nn.Module = nn.Identity(),
+        auto_set_target_length = True
     ):
         super().__init__()
         assert isinstance(enformer, Enformer)
@@ -120,6 +122,8 @@ class HeadAdapterWrapper(nn.Module):
         self.post_transformer_embed = post_transformer_embed
 
         self.enformer = enformer
+
+        self.auto_set_target_length = auto_set_target_length
 
         if post_transformer_embed:
             self.enformer = deepcopy(enformer)
@@ -145,10 +149,15 @@ class HeadAdapterWrapper(nn.Module):
         finetune_enformer_ln_only = False,
         finetune_last_n_layers_only = None
     ):
+        enformer_kwargs = dict()
+
+        if exists(target) and self.auto_set_target_length:
+            enformer_kwargs = dict(target_length = target.shape[-2])
+
         if self.discrete_key_value_bottleneck:
-            embeddings = self.enformer(seq, return_only_embeddings = True)
+            embeddings = self.enformer(seq, return_only_embeddings = True, **enformer_kwargs)
         else:
-            embeddings = get_enformer_embeddings(self.enformer, seq, freeze = freeze_enformer, train_layernorms_only = finetune_enformer_ln_only, train_last_n_layers_only = finetune_last_n_layers_only)
+            embeddings = get_enformer_embeddings(self.enformer, seq, freeze = freeze_enformer, train_layernorms_only = finetune_enformer_ln_only, train_last_n_layers_only = finetune_last_n_layers_only, enformer_kwargs = enformer_kwargs)
 
         preds = self.to_tracks(embeddings)
 
@@ -170,6 +179,7 @@ class ContextAdapterWrapper(nn.Module):
         bottleneck_num_memories = 256,
         bottleneck_num_codebooks = 4,
         bottleneck_decay = 0.9,
+        auto_set_target_length = True
     ):
         super().__init__()
         assert isinstance(enformer, Enformer)
@@ -189,6 +199,8 @@ class ContextAdapterWrapper(nn.Module):
 
         self.enformer = enformer
 
+        self.auto_set_target_length = auto_set_target_length
+
         self.to_context_weights = nn.Parameter(torch.randn(context_dim, enformer_hidden_dim))
         self.to_context_bias = nn.Parameter(torch.randn(context_dim))
 
@@ -202,10 +214,15 @@ class ContextAdapterWrapper(nn.Module):
         finetune_enformer_ln_only = False,
         finetune_last_n_layers_only = None
     ):
+        enformer_kwargs = dict()
+
+        if exists(target) and self.auto_set_target_length:
+            enformer_kwargs = dict(target_length = target.shape[-2])
+
         if self.discrete_key_value_bottleneck:
-            embeddings = self.enformer(seq, return_only_embeddings = True)
+            embeddings = self.enformer(seq, return_only_embeddings = True, **enformer_kwargs)
         else:
-            embeddings = get_enformer_embeddings(self.enformer, seq, freeze = freeze_enformer, train_layernorms_only = finetune_enformer_ln_only, train_last_n_layers_only = finetune_last_n_layers_only)
+            embeddings = get_enformer_embeddings(self.enformer, seq, freeze = freeze_enformer, train_layernorms_only = finetune_enformer_ln_only, train_last_n_layers_only = finetune_last_n_layers_only, enformer_kwargs = enformer_kwargs)
 
         weights = einsum('t d, d e -> t e', context, self.to_context_weights)
         bias = einsum('t d, d -> t', context, self.to_context_bias)
@@ -233,6 +250,7 @@ class ContextAttentionAdapterWrapper(nn.Module):
         bottleneck_num_memories = 256,
         bottleneck_num_codebooks = 4,
         bottleneck_decay = 0.9,
+        auto_set_target_length = True
     ):
         super().__init__()
         assert isinstance(enformer, Enformer)
@@ -251,6 +269,8 @@ class ContextAttentionAdapterWrapper(nn.Module):
             )
 
         self.enformer = enformer
+
+        self.auto_set_target_length = auto_set_target_length
 
         self.query_norm = nn.LayerNorm(enformer_hidden_dim)
         self.key_values_norm = nn.LayerNorm(context_dim)
@@ -295,10 +315,15 @@ class ContextAttentionAdapterWrapper(nn.Module):
 
         h = self.heads
 
+        enformer_kwargs = dict()
+
+        if exists(target) and self.auto_set_target_length:
+            enformer_kwargs = dict(target_length = target.shape[-2])
+
         if self.discrete_key_value_bottleneck:
-            embeddings = self.enformer(seq, return_only_embeddings = True)
+            embeddings = self.enformer(seq, return_only_embeddings = True, **enformer_kwargs)
         else:
-            embeddings = get_enformer_embeddings(self.enformer, seq, freeze = freeze_enformer, train_layernorms_only = finetune_enformer_ln_only, train_last_n_layers_only = finetune_last_n_layers_only)
+            embeddings = get_enformer_embeddings(self.enformer, seq, freeze = freeze_enformer, train_layernorms_only = finetune_enformer_ln_only, train_last_n_layers_only = finetune_last_n_layers_only, enformer_kwargs = enformer_kwargs)
 
         # perform cross attention from genetic -> context
 

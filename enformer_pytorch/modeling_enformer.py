@@ -396,7 +396,8 @@ class Enformer(PreTrainedModel):
         return_corr_coef = False,
         return_embeddings = False,
         return_only_embeddings = False,
-        head = None
+        head = None,
+        target_length = None
     ):
         if isinstance(x, list):
             x = str_to_one_hot(x)
@@ -408,6 +409,9 @@ class Enformer(PreTrainedModel):
 
         if no_batch:
             x = rearrange(x, '... -> () ...')
+
+        if exists(target_length):
+            self.set_target_length(target_length)
 
         trunk_fn = self.trunk_checkpointed if self.use_checkpointing else self._trunk
         x = trunk_fn(x)

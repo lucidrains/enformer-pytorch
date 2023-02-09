@@ -177,7 +177,7 @@ enformer = Enformer.from_hparams(
     heads = 8,
     target_length = 200,
 )
-    
+
 model = HeadAdapterWrapper(
     enformer = enformer,
     num_tracks = 128,
