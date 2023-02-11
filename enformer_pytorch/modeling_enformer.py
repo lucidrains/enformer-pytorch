@@ -136,7 +136,13 @@ class AttentionPool(nn.Module):
         super().__init__()
         self.pool_size = pool_size
         self.pool_fn = Rearrange('b d (n p) -> b d n p', p = pool_size)
+
         self.to_attn_logits = nn.Conv2d(dim, dim, 1, bias = False)
+
+        nn.init.dirac_(self.to_attn_logits.weight)
+
+        with torch.no_grad():
+            self.to_attn_logits.weight.mul_(2)
 
     def forward(self, x):
         b, _, n = x.shape
