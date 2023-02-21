@@ -1,4 +1,6 @@
 import torch
+from typing import Optional
+
 from copy import deepcopy
 from contextlib import contextmanager
 import torch.nn.functional as F
@@ -12,6 +14,9 @@ from discrete_key_value_bottleneck_pytorch import DiscreteKeyValueBottleneck
 
 def exists(val):
     return val is not None
+
+def default(val, d):
+    return val if exists(val) else d
 
 @contextmanager
 def null_context():
@@ -101,6 +106,7 @@ class HeadAdapterWrapper(nn.Module):
         bottleneck_num_codebooks = 4,
         bottleneck_decay = 0.9,
         transformer_embed_fn: nn.Module = nn.Identity(),
+        output_activation: Optional[nn.Module] = nn.Softplus(),
         auto_set_target_length = True
     ):
         super().__init__()
@@ -135,9 +141,9 @@ class HeadAdapterWrapper(nn.Module):
             nn.LayerNorm(enformer_hidden_dim) if post_transformer_embed else None
         )
 
-        self.to_tracks = nn.Sequential(
+        self.to_tracks = Sequential(
             nn.Linear(enformer_hidden_dim, num_tracks),
-            nn.Softplus()
+            output_activation
         )
 
     def forward(
@@ -179,7 +185,8 @@ class ContextAdapterWrapper(nn.Module):
         bottleneck_num_memories = 256,
         bottleneck_num_codebooks = 4,
         bottleneck_decay = 0.9,
-        auto_set_target_length = True
+        auto_set_target_length = True,
+        output_activation: Optional[nn.Module] = nn.Softplus()
     ):
         super().__init__()
         assert isinstance(enformer, Enformer)
@@ -203,6 +210,8 @@ class ContextAdapterWrapper(nn.Module):
 
         self.to_context_weights = nn.Parameter(torch.randn(context_dim, enformer_hidden_dim))
         self.to_context_bias = nn.Parameter(torch.randn(context_dim))
+
+        self.activation = default(output_activation, nn.Identity())
 
     def forward(
         self,
@@ -229,7 +238,7 @@ class ContextAdapterWrapper(nn.Module):
 
         pred = einsum('b n d, t d -> b n t', embeddings, weights) + bias
 
-        pred = F.softplus(pred)
+        pred = self.activation(pred)
 
         if not exists(target):
             return pred
@@ -250,7 +259,8 @@ class ContextAttentionAdapterWrapper(nn.Module):
         bottleneck_num_memories = 256,
         bottleneck_num_codebooks = 4,
         bottleneck_decay = 0.9,
-        auto_set_target_length = True
+        auto_set_target_length = True,
+        output_activation: Optional[nn.Module] = None
     ):
         super().__init__()
         assert isinstance(enformer, Enformer)
@@ -286,10 +296,10 @@ class ContextAttentionAdapterWrapper(nn.Module):
         self.to_key_values = nn.Linear(context_dim, inner_dim * 2, bias = False)
         self.to_out = nn.Linear(inner_dim, enformer_hidden_dim)
 
-        self.to_pred  = nn.Sequential(
+        self.to_pred  = Sequential(
             nn.Linear(enformer_hidden_dim, 1),
             Rearrange('b c ... 1 -> b ... c'),
-            nn.Softplus()
+            output_activation
         )
 
     def forward(
