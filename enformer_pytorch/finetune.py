@@ -101,6 +101,7 @@ class HeadAdapterWrapper(nn.Module):
         bottleneck_num_codebooks = 4,
         bottleneck_decay = 0.9,
         transformer_embed_fn: nn.Module = nn.Identity(),
+        output_activation: nn.Module = nn.Softplus(),
         auto_set_target_length = True
     ):
         super().__init__()
@@ -137,7 +138,7 @@ class HeadAdapterWrapper(nn.Module):
 
         self.to_tracks = nn.Sequential(
             nn.Linear(enformer_hidden_dim, num_tracks),
-            nn.Softplus()
+            output_activation if output_activation else None
         )
 
     def forward(
