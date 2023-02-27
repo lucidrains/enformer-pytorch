@@ -171,12 +171,7 @@ import torch
 from enformer_pytorch import Enformer
 from enformer_pytorch.finetune import HeadAdapterWrapper
 
-enformer = Enformer.from_hparams(
-    dim = 1536,
-    depth = 1,
-    heads = 8,
-    target_length = 200,
-)
+enformer = Enformer.from_pretrained('EleutherAI/enformer-official-rough')
 
 model = HeadAdapterWrapper(
     enformer = enformer,
@@ -198,12 +193,7 @@ import torch
 from enformer_pytorch import Enformer
 from enformer_pytorch.finetune import ContextAdapterWrapper
 
-enformer = Enformer.from_hparams(
-    dim = 1536,
-    depth = 1,
-    heads = 8,
-    target_length = 200,
-)
+enformer = Enformer.from_pretrained('EleutherAI/enformer-official-rough')
     
 model = ContextAdapterWrapper(
     enformer = enformer,
@@ -231,12 +221,7 @@ import torch
 from enformer_pytorch import Enformer
 from enformer_pytorch.finetune import ContextAttentionAdapterWrapper
 
-enformer = Enformer.from_hparams(
-    dim = 1536,
-    depth = 1,
-    heads = 8,
-    target_length = 200,
-)
+enformer = Enformer.from_pretrained('EleutherAI/enformer-official-rough')
     
 model = ContextAttentionAdapterWrapper(
     enformer = enformer,
