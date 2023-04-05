@@ -144,17 +144,19 @@ class FastaInterval():
 
         seq = ('.' * left_padding) + str(chromosome[start:end]) + ('.' * right_padding)
 
+        should_rc_aug = self.rc_aug and coin_flip()
+
         if self.return_seq_indices:
-            if self.rc_aug and coin_flip():
+            seq = str_to_seq_indices(seq)
+
+            if should_rc_aug:
                 seq = seq_indices_reverse_complement(seq)
 
-            return str_to_seq_indices(seq)
+            return seq
 
         one_hot = str_to_one_hot(seq)
 
-        rc_aug = self.rc_aug and coin_flip()
-
-        if rc_aug:
+        if should_rc_aug:
             one_hot = one_hot_reverse_complement(one_hot)
 
         if not return_augs:
@@ -164,7 +166,7 @@ class FastaInterval():
         # for this particular genomic sequence
 
         rand_shift_tensor = torch.tensor([rand_shift])
-        rand_aug_bool_tensor = torch.tensor([rc_aug])
+        rand_aug_bool_tensor = torch.tensor([should_rc_aug])
 
         return one_hot, rand_shift_tensor, rand_aug_bool_tensor
 
