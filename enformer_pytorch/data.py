@@ -188,7 +188,7 @@ class GenomeIntervalDataset(Dataset):
         bed_path = Path(bed_file)
         assert bed_path.exists(), 'path to .bed file must exist'
 
-        df = pl.read_csv(str(bed_path), sep = '\t', has_header = False)
+        df = pl.read_csv(str(bed_path), separator = '\t', has_header = False)
         df = filter_df_fn(df)
         self.df = df
 

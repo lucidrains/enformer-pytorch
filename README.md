@@ -249,7 +249,7 @@ loss.backward()
 
 ## Data
 
-You can use the `GenomicIntervalDataset` to easily fetch sequences of any length from a `.bed` file, with greater context length dynamically computed if specified
+You can use the `GenomicIntervalDataset` to easily fetch sequences of any length from a <a href="https://genome.ucsc.edu/FAQ/FAQformat.html#format1">`.bed`</a> file, with greater context length dynamically computed if specified
 
 ```python
 import torch
