@@ -4,7 +4,7 @@ setup(
   name = 'enformer-pytorch',
   packages = find_packages(exclude=[]),
   include_package_data = True,
-  version = '0.7.4',
+  version = '0.7.5',
   license='MIT',
   description = 'Enformer - Pytorch',
   author = 'Phil Wang',
@@ -25,7 +25,7 @@ setup(
     'polars',
     'pyfaidx',
     'pyyaml',
-    'transformers',
+    'transformers[torch]',
   ],
   classifiers=[
     'Development Status :: 4 - Beta',
