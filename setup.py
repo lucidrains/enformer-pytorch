@@ -4,7 +4,7 @@ setup(
   name = 'enformer-pytorch',
   packages = find_packages(exclude=[]),
   include_package_data = True,
-  version = '0.7.5',
+  version = '0.7.6',
   license='MIT',
   description = 'Enformer - Pytorch',
   author = 'Phil Wang',
@@ -17,7 +17,7 @@ setup(
     'gene-expression'
   ],
   install_requires=[
-    'discrete-key-value-bottleneck-pytorch',
+    'discrete-key-value-bottleneck-pytorch>=0.0.8',
     'einops>=0.3',
     'numpy',
     'torch>=1.6',
