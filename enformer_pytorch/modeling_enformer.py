@@ -75,14 +75,22 @@ def get_positional_features_gamma(positions, features, seq_len, stddev = None, s
     if not exists(start_mean):
         start_mean = seq_len / features
 
-    mean = torch.linspace(start_mean, seq_len, features, device = positions.device)
+    # turns out xlogy between tensorflow and torch differs because of the log - thanks to phd student @johahi for finding this!
+    # do everything in float64 here for precision
+
+    dtype = positions.dtype
+    positions = positions.double()
+    mean = torch.linspace(start_mean, seq_len, features, device = positions.device, dtype = torch.float64)
+
     mean = mean[None, ...]
     concentration = (mean / stddev) ** 2
     rate = mean / stddev ** 2
-    probabilities = gamma_pdf(positions.float().abs()[..., None], concentration, rate)
+
+    probabilities = gamma_pdf(positions.abs()[..., None], concentration, rate)
     probabilities = probabilities + eps
     outputs = probabilities / torch.amax(probabilities, dim = -1, keepdim = True)
-    return outputs
+
+    return outputs.to(dtype)
 
 def get_positional_embed(seq_len, feature_size, device):
     distances = torch.arange(-seq_len + 1, seq_len, device = device)
