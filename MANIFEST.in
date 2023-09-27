@@ -1,1 +1,1 @@
-recursive-include enformer_pytorch *.yml
+recursive-include enformer_pytorch *.pt
