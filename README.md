@@ -119,6 +119,8 @@ Deepmind has released the weights for their tensorflow sonnet Enformer model! I 
 
 Update: <a href="https://github.com/jstjohn">John St. John</a> did some work and found that the `enformer-official-rough` model hits the reported marks in the paper - human pearson R of `0.625` for validation, and `0.65` for test.
 
+Update: As of version 0.8.0, if one were to use the `from_pretrained` function to load the pretrained model, it should automatically use precomputed gamma positions to address a difference between tensorflow and pytorch `xlogy`. This should resolve the numerical discrepancy above. If you were to further finetune and not be using the `from_pretrained` function, please make sure to set `use_tf_gamma = True` when using `.from_hparams` to instantiate the `Enformer`
+
 ```bash
 $ pip install enformer-pytorch>=0.5
 ````
@@ -126,9 +128,9 @@ $ pip install enformer-pytorch>=0.5
 Loading the model
 
 ```python
-from enformer_pytorch import Enformer
+from enformer_pytorch import from_pretrained
 
-enformer = Enformer.from_pretrained('EleutherAI/enformer-official-rough')
+enformer = from_pretrained('EleutherAI/enformer-official-rough')
 ```
 
 Quick sanity check on a single human validation point
@@ -143,9 +145,9 @@ This is all made possible thanks to HuggingFace's [custom model](https://hugging
 You can also load, with overriding of the `target_length` parameter, if you are working with shorter sequence lengths
 
 ```python
-from enformer_pytorch import Enformer
+from enformer_pytorch import from_pretrained
 
-model = Enformer.from_pretrained('EleutherAI/enformer-official-rough', target_length = 128, dropout_rate = 0.1)
+model = from_pretrained('EleutherAI/enformer-official-rough', target_length = 128, dropout_rate = 0.1)
 
 # do your fine-tuning
 ```
@@ -153,9 +155,9 @@ model = Enformer.from_pretrained('EleutherAI/enformer-official-rough', target_le
 To save on memory during fine-tuning a large Enformer model
 
 ```python
-from enformer_pytorch import Enformer
+from enformer_pytorch import from_pretrained
 
-enformer = Enformer.from_pretrained('EleutherAI/enformer-official-rough', use_checkpointing = True)
+enformer = from_pretrained('EleutherAI/enformer-official-rough', use_checkpointing = True)
 
 # finetune enformer on a limited budget
 ```
@@ -168,10 +170,10 @@ Fine-tuning on new tracks
 
 ```python
 import torch
-from enformer_pytorch import Enformer
+from enformer_pytorch import from_pretrained
 from enformer_pytorch.finetune import HeadAdapterWrapper
 
-enformer = Enformer.from_pretrained('EleutherAI/enformer-official-rough')
+enformer = from_pretrained('EleutherAI/enformer-official-rough')
 
 model = HeadAdapterWrapper(
     enformer = enformer,
@@ -190,10 +192,10 @@ Finetuning on contextual data (cell type, transcription factor, etc)
 
 ```python
 import torch
-from enformer_pytorch import Enformer
+from enformer_pytorch import from_pretrained
 from enformer_pytorch.finetune import ContextAdapterWrapper
 
-enformer = Enformer.from_pretrained('EleutherAI/enformer-official-rough')
+enformer = from_pretrained('EleutherAI/enformer-official-rough')
     
 model = ContextAdapterWrapper(
     enformer = enformer,
@@ -218,10 +220,10 @@ Finally, there is also a way to use attention aggregation from a set of context 
 
 ```python
 import torch
-from enformer_pytorch import Enformer
+from enformer_pytorch import from_pretrained
 from enformer_pytorch.finetune import ContextAttentionAdapterWrapper
 
-enformer = Enformer.from_pretrained('EleutherAI/enformer-official-rough')
+enformer = from_pretrained('EleutherAI/enformer-official-rough')
     
 model = ContextAttentionAdapterWrapper(
     enformer = enformer,
@@ -314,6 +316,8 @@ seq, rand_shift_val, rc_bool = ds[0] # (196608,), (1,), (1,)
 ## Appreciation
 
 Special thanks goes out to <a href="https://www.eleuther.ai/">EleutherAI</a> for providing the resources to retrain the model, during a time when the official model from Deepmind had not been released yet.
+
+Thanks also goes out to <a href="johahi">@johahi</a> for finding out that there are numerical differences between the torch and tensorflow implementations of `xlogy`. He provided a fix for this difference, which is adopted in this repository in `v0.8.0`
 
 ## Todo
 
