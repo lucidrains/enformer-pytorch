@@ -480,6 +480,10 @@ def from_pretrained(name, use_tf_gamma = None, **kwargs):
     enformer = Enformer.from_pretrained(name, **kwargs)
 
     if name == 'EleutherAI/enformer-official-rough':
-        enformer.use_tf_gamma = default(use_tf_gamma, True)
+        use_tf_gamma = default(use_tf_gamma, True)
+
+        for module in enformer.modules():
+            if isinstance(module, Attention):
+                module.use_tf_gamma = use_tf_gamma
 
     return enformer
