@@ -1,1 +1,1 @@
-recursive-include enformer_pytorch *.yml
+include enformer_pytorch/precomputed/tf_gammas.pt

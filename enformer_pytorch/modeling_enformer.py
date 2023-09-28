@@ -1,4 +1,6 @@
 import math
+from pathlib import Path
+
 import torch
 from torch import nn, einsum
 import torch.nn.functional as F
@@ -18,6 +20,13 @@ from transformers import PreTrainedModel
 SEQUENCE_LENGTH = 196_608
 TARGET_LENGTH = 896
 
+# gamma positions from tensorflow
+# addressing a difference between xlogy results from tensorflow and pytorch
+# solution came from @johahi
+
+DIR = Path(__file__).parents[0]
+TF_GAMMAS = torch.load(str(DIR / "precomputed"/ "tf_gammas.pt"))
+
 # helpers
 
 def exists(val):
@@ -25,6 +34,11 @@ def exists(val):
 
 def default(val, d):
     return val if exists(val) else d
+
+def always(val):
+    def inner(*args, **kwargs):
+        return val
+    return inner
 
 def map_values(fn, d):
     return {key: fn(values) for key, values in d.items()}
@@ -75,30 +89,24 @@ def get_positional_features_gamma(positions, features, seq_len, stddev = None, s
     if not exists(start_mean):
         start_mean = seq_len / features
 
-    # turns out xlogy between tensorflow and torch differs because of the log - thanks to phd student @johahi for finding this!
-    # do everything in float64 here for precision
-
-    dtype = positions.dtype
-    positions = positions.double()
-    mean = torch.linspace(start_mean, seq_len, features, device = positions.device, dtype = torch.float64)
+    mean = torch.linspace(start_mean, seq_len, features, device = positions.device)
 
     mean = mean[None, ...]
     concentration = (mean / stddev) ** 2
     rate = mean / stddev ** 2
 
-    probabilities = gamma_pdf(positions.abs()[..., None], concentration, rate)
+    probabilities = gamma_pdf(positions.float().abs()[..., None], concentration, rate)
     probabilities = probabilities + eps
     outputs = probabilities / torch.amax(probabilities, dim = -1, keepdim = True)
+    return outputs
 
-    return outputs.to(dtype)
-
-def get_positional_embed(seq_len, feature_size, device):
+def get_positional_embed(seq_len, feature_size, device, use_tf_gamma):
     distances = torch.arange(-seq_len + 1, seq_len, device = device)
 
     feature_functions = [
         get_positional_features_exponential,
         get_positional_features_central_mask,
-        get_positional_features_gamma
+        get_positional_features_gamma if not use_tf_gamma else always(TF_GAMMAS.to(device))
     ]
 
     num_components = len(feature_functions) * 2
@@ -213,7 +221,8 @@ class Attention(nn.Module):
         dim_key = 64,
         dim_value = 64,
         dropout = 0.,
-        pos_dropout = 0.
+        pos_dropout = 0.,
+        use_tf_gamma = False
     ):
         super().__init__()
         self.scale = dim_key ** -0.5
@@ -240,6 +249,10 @@ class Attention(nn.Module):
         self.pos_dropout = nn.Dropout(pos_dropout)
         self.attn_dropout = nn.Dropout(dropout)
 
+        # whether to use tf gamma
+
+        self.use_tf_gamma = use_tf_gamma
+
     def forward(self, x):
         n, h, device = x.shape[-2], self.heads, x.device
 
@@ -253,7 +266,7 @@ class Attention(nn.Module):
 
         content_logits = einsum('b h i d, b h j d -> b h i j', q + self.rel_content_bias, k)
 
-        positions = get_positional_embed(n, self.num_rel_pos_features, device)
+        positions = get_positional_embed(n, self.num_rel_pos_features, device, use_tf_gamma = self.use_tf_gamma)
         positions = self.pos_dropout(positions)
         rel_k = self.to_rel_k(positions)
 
@@ -308,6 +321,11 @@ class Enformer(PreTrainedModel):
 
         self.conv_tower = nn.Sequential(*conv_layers)
 
+        # whether to use tensorflow gamma positions
+
+        use_tf_gamma = config.use_tf_gamma
+        self.use_tf_gamma = use_tf_gamma
+
         # transformer
 
         transformer = []
@@ -322,7 +340,8 @@ class Enformer(PreTrainedModel):
                         dim_value = config.dim // config.heads,
                         dropout = config.attn_dropout,
                         pos_dropout = config.pos_dropout,
-                        num_rel_pos_features = config.dim // config.heads
+                        num_rel_pos_features = config.dim // config.heads,
+                        use_tf_gamma = use_tf_gamma
                     ),
                     nn.Dropout(config.dropout_rate)
                 )),
@@ -454,3 +473,13 @@ class Enformer(PreTrainedModel):
             return out, x
 
         return out
+
+# from pretrained function
+
+def from_pretrained(name, use_tf_gamma = None, **kwargs):
+    enformer = Enformer.from_pretrained(name, **kwargs)
+
+    if name == 'EleutherAI/enformer-official-rough':
+        enformer.use_tf_gamma = default(use_tf_gamma, True)
+
+    return enformer
