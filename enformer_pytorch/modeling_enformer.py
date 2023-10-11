@@ -27,6 +27,15 @@ TARGET_LENGTH = 896
 DIR = Path(__file__).parents[0]
 TF_GAMMAS = torch.load(str(DIR / "precomputed"/ "tf_gammas.pt"))
 
+def get_tf_gamma(seq_len, device):
+    tf_gammas = TF_GAMMAS.to(device)
+    pad = 1536 - seq_len
+
+    if pad == 0:
+        return tf_gammas
+
+    return tf_gammas[pad:-pad]
+
 # helpers
 
 def exists(val):
@@ -106,7 +115,7 @@ def get_positional_embed(seq_len, feature_size, device, use_tf_gamma):
     feature_functions = [
         get_positional_features_exponential,
         get_positional_features_central_mask,
-        get_positional_features_gamma if not use_tf_gamma else always(TF_GAMMAS.to(device))
+        get_positional_features_gamma if not use_tf_gamma else always(get_tf_gamma(seq_len, device))
     ]
 
     num_components = len(feature_functions) * 2
