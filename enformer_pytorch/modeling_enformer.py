@@ -4,6 +4,7 @@ from pathlib import Path
 import torch
 from torch import nn, einsum
 import torch.nn.functional as F
+import torch.distributed as dist
 from torch.utils.checkpoint import checkpoint_sequential
 
 from einops import rearrange, reduce
@@ -52,6 +53,12 @@ def exponential_linspace_int(start, end, num, divisible_by = 1):
 
 def log(t, eps = 1e-20):
     return torch.log(t.clamp(min = eps))
+
+# maybe sync batchnorm, for distributed training
+
+def MaybeSyncBatchnorm(is_distributed = None):
+    is_distributed = default(is_distributed, dist.is_initialized() and dist.get_world_size() > 1)
+    return nn.SyncBatchNorm if is_distributed else nn.BatchNorm1d
 
 # losses and metrics
 
@@ -204,9 +211,11 @@ class TargetLengthCrop(nn.Module):
 
         return x[:, -trim:trim]
 
-def ConvBlock(dim, dim_out = None, kernel_size = 1):
+def ConvBlock(dim, dim_out = None, kernel_size = 1, is_distributed = None):
+    batchnorm_klass = MaybeSyncBatchnorm(is_distributed = is_distributed)
+
     return nn.Sequential(
-        nn.BatchNorm1d(dim),
+        batchnorm_klass(dim),
         GELU(),
         nn.Conv1d(dim, default(dim_out, dim), kernel_size, padding = kernel_size // 2)
     )
