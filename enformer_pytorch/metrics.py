@@ -5,11 +5,10 @@ import torch
 
 class MeanPearsonCorrCoefPerChannel(Metric):
     is_differentiable: Optional[bool] = False
-    full_state_update:bool = False
     higher_is_better: Optional[bool] = True
     def __init__(self, n_channels:int, dist_sync_on_step=False):
         """Calculates the mean pearson correlation across channels aggregated over regions"""
-        super().__init__(dist_sync_on_step=dist_sync_on_step, full_state_update=False)
+        super().__init__(dist_sync_on_step=dist_sync_on_step)
         self.reduce_dims=(0, 1)
         self.add_state("product", default=torch.zeros(n_channels, dtype=torch.float32), dist_reduce_fx="sum", )
         self.add_state("true", default=torch.zeros(n_channels, dtype=torch.float32), dist_reduce_fx="sum", )
