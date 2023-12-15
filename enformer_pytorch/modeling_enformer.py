@@ -72,24 +72,24 @@ def pearson_corr_coef(x, y, dim = 1, reduce_dims = (-1,)):
 
 # relative positional encoding functions
 
-def get_positional_features_exponential(positions, features, seq_len, min_half_life = 3.):
+def get_positional_features_exponential(positions, features, seq_len, min_half_life = 3., dtype = torch.float):
     max_range = math.log(seq_len) / math.log(2.)
     half_life = 2 ** torch.linspace(min_half_life, max_range, features, device = positions.device)
     half_life = half_life[None, ...]
     positions = positions.abs()[..., None]
     return torch.exp(-math.log(2.) / half_life * positions)
 
-def get_positional_features_central_mask(positions, features, seq_len):
-    center_widths = 2 ** torch.arange(1, features + 1, device = positions.device).float()
+def get_positional_features_central_mask(positions, features, seq_len, dtype = torch.float):
+    center_widths = 2 ** torch.arange(1, features + 1, device = positions.device).to(dtype)
     center_widths = center_widths - 1
-    return (center_widths[None, ...] > positions.abs()[..., None]).float()
+    return (center_widths[None, ...] > positions.abs()[..., None]).to(dtype)
 
 def gamma_pdf(x, concentration, rate):
     log_unnormalized_prob = torch.xlogy(concentration - 1., x) - rate * x
     log_normalization = (torch.lgamma(concentration) - concentration * torch.log(rate))
     return torch.exp(log_unnormalized_prob - log_normalization)
 
-def get_positional_features_gamma(positions, features, seq_len, stddev = None, start_mean = None, eps = 1e-8):
+def get_positional_features_gamma(positions, features, seq_len, stddev = None, start_mean = None, eps = 1e-8, dtype = torch.float):
     if not exists(stddev):
         stddev = seq_len / (2 * features)
 
@@ -102,12 +102,12 @@ def get_positional_features_gamma(positions, features, seq_len, stddev = None, s
     concentration = (mean / stddev) ** 2
     rate = mean / stddev ** 2
 
-    probabilities = gamma_pdf(positions.float().abs()[..., None], concentration, rate)
+    probabilities = gamma_pdf(positions.to(dtype).abs()[..., None], concentration, rate)
     probabilities = probabilities + eps
     outputs = probabilities / torch.amax(probabilities, dim = -1, keepdim = True)
     return outputs
 
-def get_positional_embed(seq_len, feature_size, device, use_tf_gamma):
+def get_positional_embed(seq_len, feature_size, device, use_tf_gamma, dtype = torch.float):
     distances = torch.arange(-seq_len + 1, seq_len, device = device)
 
     assert not use_tf_gamma or seq_len == 1536, 'if using tf gamma, only sequence length of 1536 allowed for now'
@@ -127,11 +127,11 @@ def get_positional_embed(seq_len, feature_size, device, use_tf_gamma):
 
     embeddings = []
     for fn in feature_functions:
-        embeddings.append(fn(distances, num_basis_per_class, seq_len))
+        embeddings.append(fn(distances, num_basis_per_class, seq_len, dtype = dtype))
 
     embeddings = torch.cat(embeddings, dim = -1)
     embeddings = torch.cat((embeddings, torch.sign(distances)[..., None] * embeddings), dim = -1)
-    return embeddings
+    return embeddings.to(dtype)
 
 def relative_shift(x):
     to_pad = torch.zeros_like(x[..., :1])
@@ -277,7 +277,7 @@ class Attention(nn.Module):
 
         content_logits = einsum('b h i d, b h j d -> b h i j', q + self.rel_content_bias, k)
 
-        positions = get_positional_embed(n, self.num_rel_pos_features, device, use_tf_gamma = self.use_tf_gamma)
+        positions = get_positional_embed(n, self.num_rel_pos_features, device, use_tf_gamma = self.use_tf_gamma, dtype = self.to_rel_k.weight.dtype)
         positions = self.pos_dropout(positions)
         rel_k = self.to_rel_k(positions)
 
