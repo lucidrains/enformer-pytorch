@@ -110,7 +110,7 @@ def get_positional_features_gamma(positions, features, seq_len, stddev = None, s
 def get_positional_embed(seq_len, feature_size, device, use_tf_gamma, dtype = torch.float):
     distances = torch.arange(-seq_len + 1, seq_len, device = device)
 
-    assert not use_tf_gamma or seq_len == 1536, 'if using tf gamma, only sequence length of 1536 allowed for now'
+    assert not use_tf_gamma or seq_len == 196_608, 'if using tf gamma, only sequence length of  196_608 allowed for now'
 
     feature_functions = [
         get_positional_features_exponential,
