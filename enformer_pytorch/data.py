@@ -116,8 +116,8 @@ class FastaInterval():
             min_shift, max_shift = self.shift_augs
             max_shift += 1
 
-            min_shift = max(start + min_shift, 0) - start
-            max_shift = min(end + max_shift, chromosome_length) - end
+            min_shift = min(max(start + min_shift, 0) - start, 0)
+            max_shift = max(min(end + max_shift, chromosome_length) - end, 1)
 
             rand_shift = randrange(min_shift, max_shift)
             start += rand_shift
