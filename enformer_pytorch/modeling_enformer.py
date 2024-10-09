@@ -26,7 +26,7 @@ TARGET_LENGTH = 896
 # solution came from @johahi
 
 DIR = Path(__file__).parents[0]
-TF_GAMMAS = torch.load(str(DIR / "precomputed"/ "tf_gammas.pt"))
+TF_GAMMAS = torch.load(str(DIR / "precomputed"/ "tf_gammas.pt"), weights_only=True)
 
 # helpers
 
