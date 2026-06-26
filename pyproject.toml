@@ -1,6 +1,6 @@
 [project]
 name = "enformer-pytorch"
-version = "0.8.10"
+version = "0.8.12"
 description = "Enformer - Pytorch"
 authors = [
     { name = "Phil Wang", email = "lucidrains@gmail.com" }
