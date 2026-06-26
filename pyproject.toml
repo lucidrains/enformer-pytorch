@@ -1,0 +1,72 @@
+[project]
+name = "enformer-pytorch"
+version = "0.8.10"
+description = "Enformer - Pytorch"
+authors = [
+    { name = "Phil Wang", email = "lucidrains@gmail.com" }
+]
+readme = "README.md"
+requires-python = ">= 3.6"
+license = { file = "LICENSE" }
+keywords = [
+    "artificial intelligence",
+    "transformer",
+    "gene-expression"
+]
+
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3.6",
+]
+
+dependencies = [
+    "discrete-key-value-bottleneck-pytorch>=0.0.8",
+    "einops>=0.3",
+    "numpy",
+    "torch>=1.6",
+    "torchmetrics",
+    "polars",
+    "pyfaidx",
+    "pyyaml",
+    "transformers[torch]==4.56.2",
+]
+
+[project.urls]
+Homepage = "https://pypi.org/project/enformer-pytorch/"
+Repository = "https://github.com/lucidrains/enformer-pytorch"
+
+[project.optional-dependencies]
+examples = []
+test = [
+    "pytest"
+]
+
+[tool.pytest.ini_options]
+pythonpath = [
+    "."
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.rye]
+managed = true
+dev-dependencies = []
+
+[tool.hatch.metadata]
+allow-direct-references = true
+
+[tool.hatch.build]
+include = [
+    "enformer_pytorch",
+    "pyproject.toml",
+    "README.md",
+    "LICENSE"
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["enformer_pytorch"]
