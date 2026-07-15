@@ -175,7 +175,7 @@ import torch
 from enformer_pytorch import from_pretrained
 from enformer_pytorch.finetune import HeadAdapterWrapper
 
-enformer = from_pretrained('EleutherAI/enformer-official-rough')
+enformer = from_pretrained('EleutherAI/enformer-official-rough', use_tf_gamma = False) #false is required for running with sequence longer than 1536
 
 model = HeadAdapterWrapper(
     enformer = enformer,
@@ -197,7 +197,7 @@ import torch
 from enformer_pytorch import from_pretrained
 from enformer_pytorch.finetune import ContextAdapterWrapper
 
-enformer = from_pretrained('EleutherAI/enformer-official-rough')
+enformer = from_pretrained('EleutherAI/enformer-official-rough', use_tf_gamma = False)
     
 model = ContextAdapterWrapper(
     enformer = enformer,
@@ -225,7 +225,7 @@ import torch
 from enformer_pytorch import from_pretrained
 from enformer_pytorch.finetune import ContextAttentionAdapterWrapper
 
-enformer = from_pretrained('EleutherAI/enformer-official-rough')
+enformer = from_pretrained('EleutherAI/enformer-official-rough', use_tf_gamma = False)
     
 model = ContextAttentionAdapterWrapper(
     enformer = enformer,
