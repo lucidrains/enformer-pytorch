@@ -1,3 +1,6 @@
+import numpy as np
+import torch
+
 from einops import rearrange
 
 def copy_bn(mod, vars, path):
